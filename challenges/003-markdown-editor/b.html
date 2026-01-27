@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --green: #3fb950;
+            --purple: #bc8cff;
+            --orange: #ffa657;
+            --red: #ff7b72;
+            --yellow: #e3b341;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            gap: 12px;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--accent);
+        }
+
+        .template-select {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .template-select:hover, .template-select:focus {
+            border-color: var(--accent);
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 57px);
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .pane-header {
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border-color);
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            position: absolute;
+            inset: 0;
+            overflow: auto;
+        }
+
+        #editor, .highlight-layer {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            tab-size: 4;
+        }
+
+        #editor {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            color: transparent;
+            caret-color: var(--text-primary);
+            border: none;
+            outline: none;
+            resize: none;
+            z-index: 2;
+        }
+
+        .highlight-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            color: var(--text-primary);
+            z-index: 1;
+            overflow: auto;
+        }
+
+        .preview-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px 24px;
+            background: var(--bg-primary);
+        }
+
+        /* Syntax Highlighting */
+        .hl-heading { color: var(--accent); font-weight: bold; }
+        .hl-bold { color: var(--orange); font-weight: bold; }
+        .hl-italic { color: var(--yellow); font-style: italic; }
+        .hl-code { color: var(--green); background: var(--bg-tertiary); border-radius: 3px; padding: 0 4px; }
+        .hl-code-block { color: var(--green); }
+        .hl-link { color: var(--purple); }
+        .hl-url { color: var(--text-secondary); }
+        .hl-list { color: var(--red); }
+        .hl-blockquote { color: var(--text-secondary); }
+        .hl-hr { color: var(--border-color); }
+        .hl-image { color: var(--purple); }
+
+        /* Preview Styles */
+        .preview-container h1, .preview-container h2, .preview-container h3,
+        .preview-container h4, .preview-container h5, .preview-container h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+
+        .preview-container h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border-color); }
+        .preview-container h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border-color); }
+        .preview-container h3 { font-size: 1.25em; }
+        .preview-container h4 { font-size: 1em; }
+        .preview-container h5 { font-size: 0.875em; }
+        .preview-container h6 { font-size: 0.85em; color: var(--text-secondary); }
+
+        .preview-container p {
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+
+        .preview-container a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .preview-container a:hover {
+            text-decoration: underline;
+        }
+
+        .preview-container strong { font-weight: 600; }
+        .preview-container em { font-style: italic; }
+
+        .preview-container code {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 85%;
+            background: var(--bg-tertiary);
+            padding: 0.2em 0.4em;
+            border-radius: 6px;
+        }
+
+        .preview-container pre {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .preview-container pre code {
+            background: none;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .preview-container ul, .preview-container ol {
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+
+        .preview-container li {
+            margin-bottom: 4px;
+            line-height: 1.7;
+        }
+
+        .preview-container li > ul, .preview-container li > ol {
+            margin-bottom: 0;
+            margin-top: 4px;
+        }
+
+        .preview-container blockquote {
+            margin: 0 0 16px 0;
+            padding: 0 1em;
+            border-left: 4px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .preview-container hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 24px 0;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 8px 0;
+        }
+
+        .preview-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .preview-container th, .preview-container td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .preview-container th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        .preview-container tr:nth-child(even) {
+            background: var(--bg-secondary);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-color);
+        }
+
+        /* Sync scroll indicator */
+        .editor-container::-webkit-scrollbar-thumb,
+        .preview-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="logo">
+                <svg viewBox="0 0 24 24"><path d="M14.85 3H5.5A2.5 2.5 0 0 0 3 5.5v13A2.5 2.5 0 0 0 5.5 21h13a2.5 2.5 0 0 0 2.5-2.5V9.15a2.5 2.5 0 0 0-.73-1.77l-3.65-3.65A2.5 2.5 0 0 0 14.85 3zM7 7h5v2H7V7zm10 10H7v-2h10v2zm0-4H7v-2h10v2z"/></svg>
+                Markdown Editor
+            </div>
+            <select class="template-select" id="templateSelect">
+                <option value="">Load Template...</option>
+                <option value="readme">README Template</option>
+                <option value="blog">Blog Post</option>
+                <option value="docs">Documentation</option>
+                <option value="notes">Meeting Notes</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <button class="btn btn-secondary" onclick="clearEditor()">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                Clear
+            </button>
+            <button class="btn btn-primary" onclick="exportHTML()">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Export HTML
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="pane editor-pane">
+            <div class="pane-header">Markdown</div>
+            <div class="editor-wrapper">
+                <div class="editor-container">
+                    <div class="highlight-layer" id="highlightLayer"></div>
+                    <textarea id="editor" spellcheck="false"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="pane preview-pane">
+            <div class="pane-header">Preview</div>
+            <div class="preview-container" id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        // Minimal Markdown Parser
+        const parseMarkdown = (text) => {
+            let html = text;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Code blocks (fenced)
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+                return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+            });
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Images (before links)
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Headers
+            html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold and Italic
+            html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            html = html.replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+            html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+            // Strikethrough
+            html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+            // Horizontal rules
+            html = html.replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '<hr>');
+
+            // Blockquotes
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+
+            // Tables
+            html = html.replace(/^\|(.+)\|\n\|[-:| ]+\|\n((?:\|.+\|\n?)+)/gm, (match, header, body) => {
+                const headers = header.split('|').map(h => `<th>${h.trim()}</th>`).join('');
+                const rows = body.trim().split('\n').map(row => {
+                    const cells = row.slice(1, -1).split('|').map(c => `<td>${c.trim()}</td>`).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+                return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+            });
+
+            // Unordered lists
+            html = html.replace(/^[\t ]*[-*+] (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            html = html.replace(/<\/ul>\n<ul>/g, '\n');
+
+            // Ordered lists
+            html = html.replace(/^[\t ]*\d+\. (.+)$/gm, '<oli>$1</oli>');
+            html = html.replace(/(<oli>.*<\/oli>)/s, '<ol>$1</ol>');
+            html = html.replace(/<\/ol>\n<ol>/g, '\n');
+            html = html.replace(/<\/?oli>/g, (m) => m === '<oli>' ? '<li>' : '</li>');
+
+            // Paragraphs
+            html = html.split(/\n\n+/).map(block => {
+                block = block.trim();
+                if (!block) return '';
+                if (block.match(/^<(h[1-6]|ul|ol|li|blockquote|pre|hr|table|img)/)) return block;
+                return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+            }).join('\n');
+
+            return html;
+        };
+
+        // Syntax Highlighting for Editor
+        const highlightSyntax = (text) => {
+            let html = text;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Code blocks
+            html = html.replace(/(```[\s\S]*?```)/g, '<span class="hl-code-block">$1</span>');
+
+            // Headers
+            html = html.replace(/^(#{1,6} .+)$/gm, '<span class="hl-heading">$1</span>');
+
+            // Bold
+            html = html.replace(/(\*\*[^*]+\*\*)/g, '<span class="hl-bold">$1</span>');
+            html = html.replace(/(__[^_]+__)/g, '<span class="hl-bold">$1</span>');
+
+            // Italic
+            html = html.replace(/(\*[^*]+\*)/g, '<span class="hl-italic">$1</span>');
+            html = html.replace(/(_[^_]+_)/g, '<span class="hl-italic">$1</span>');
+
+            // Inline code
+            html = html.replace(/(`[^`]+`)/g, '<span class="hl-code">$1</span>');
+
+            // Images
+            html = html.replace(/(!\[[^\]]*\])(\([^)]+\))/g, '<span class="hl-image">$1</span><span class="hl-url">$2</span>');
+
+            // Links
+            html = html.replace(/(\[[^\]]+\])(\([^)]+\))/g, '<span class="hl-link">$1</span><span class="hl-url">$2</span>');
+
+            // Lists
+            html = html.replace(/^([\t ]*[-*+] )/gm, '<span class="hl-list">$1</span>');
+            html = html.replace(/^([\t ]*\d+\. )/gm, '<span class="hl-list">$1</span>');
+
+            // Blockquotes
+            html = html.replace(/^(&gt; .+)$/gm, '<span class="hl-blockquote">$1</span>');
+
+            // Horizontal rules
+            html = html.replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '<span class="hl-hr">$1</span>');
+
+            return html;
+        };
+
+        // Templates
+        const templates = {
+            readme: `# Project Name
+
+A brief description of what this project does and who it's for.
+
+## Features
+
+- Feature 1
+- Feature 2
+- Feature 3
+
+## Installation
+
+\`\`\`bash
+npm install my-project
+cd my-project
+npm start
+\`\`\`
+
+## Usage
+
+\`\`\`javascript
+import { myFunction } from 'my-project';
+
+const result = myFunction();
+console.log(result);
+\`\`\`
+
+## API Reference
+
+| Parameter | Type     | Description                |
+|-----------|----------|----------------------------|
+| id        | string   | **Required**. Your API key |
+| name      | string   | Name of item to fetch      |
+
+## Contributing
+
+Contributions are always welcome!
+
+See \`contributing.md\` for ways to get started.
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)`,
+
+            blog: `# The Future of Web Development
+
+*Published on January 26, 2025*
+
+![Hero Image](https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800)
+
+## Introduction
+
+Web development continues to evolve at a rapid pace. In this post, we'll explore the **latest trends** and what they mean for developers.
+
+> "The best way to predict the future is to invent it." - Alan Kay
+
+## Key Trends for 2025
+
+### 1. AI-Powered Development
+
+Artificial intelligence is transforming how we write code:
+
+- **Code completion** - Smarter suggestions
+- **Bug detection** - Automatic error finding
+- **Documentation** - Auto-generated docs
+
+### 2. Edge Computing
+
+Moving computation closer to users:
+
+\`\`\`javascript
+export default {
+  async fetch(request) {
+    return new Response('Hello from the edge!');
+  }
+};
+\`\`\`
+
+## Conclusion
+
+The future is bright for web developers who embrace these changes.
+
+---
+
+*Thanks for reading! Follow me for more content.*`,
+
+            docs: `# Documentation
+
+## Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have:
+
+- Node.js 18+
+- npm or yarn
+- A code editor
+
+### Quick Start
+
+1. Clone the repository
+2. Install dependencies
+3. Start the development server
+
+\`\`\`bash
+git clone https://github.com/example/repo.git
+cd repo
+npm install
+npm run dev
+\`\`\`
+
+## Configuration
+
+Create a \`config.json\` file:
+
+\`\`\`json
+{
+  "apiKey": "your-api-key",
+  "debug": false,
+  "theme": "dark"
+}
+\`\`\`
+
+## API Reference
+
+### \`initialize(options)\`
+
+Initializes the application.
+
+**Parameters:**
+
+| Name    | Type   | Default | Description          |
+|---------|--------|---------|----------------------|
+| debug   | bool   | false   | Enable debug mode    |
+| timeout | number | 5000    | Request timeout (ms) |
+
+**Returns:** \`Promise<void>\`
+
+### \`getData(id)\`
+
+Fetches data by ID.
+
+\`\`\`javascript
+const data = await getData('abc123');
+\`\`\`
+
+## Troubleshooting
+
+### Common Issues
+
+**Error: Connection refused**
+
+> Make sure the server is running on the correct port.
+
+**Error: Invalid API key**
+
+Check that your API key is correctly set in the config file.`,
+
+            notes: `# Meeting Notes
+
+**Date:** January 26, 2025
+**Attendees:** Alice, Bob, Charlie
+
+---
+
+## Agenda
+
+1. Project status update
+2. Q1 planning
+3. Open discussion
+
+## Discussion
+
+### Project Status
+
+- [x] Backend API complete
+- [x] Frontend design approved
+- [ ] Testing in progress
+- [ ] Documentation pending
+
+### Key Decisions
+
+1. **Launch date** - Confirmed for February 15
+2. **Budget** - Approved additional $10k
+3. **Team** - Adding 2 new developers
+
+### Action Items
+
+| Task | Owner | Due Date |
+|------|-------|----------|
+| Complete testing | Alice | Feb 1 |
+| Write docs | Bob | Feb 5 |
+| Prepare demo | Charlie | Feb 10 |
+
+## Notes
+
+> Important: All code must be reviewed before merge.
+
+Charlie mentioned concerns about:
+- Performance on mobile
+- Accessibility compliance
+
+## Next Meeting
+
+**Date:** February 2, 2025
+**Topic:** Sprint review`
+        };
+
+        // DOM Elements
+        const editor = document.getElementById('editor');
+        const highlightLayer = document.getElementById('highlightLayer');
+        const preview = document.getElementById('preview');
+        const templateSelect = document.getElementById('templateSelect');
+
+        // Update preview and highlighting
+        const update = () => {
+            const text = editor.value;
+            highlightLayer.innerHTML = highlightSyntax(text) + '\n';
+            preview.innerHTML = parseMarkdown(text);
+        };
+
+        // Sync scroll between editor and highlight layer
+        const syncEditorScroll = () => {
+            highlightLayer.scrollTop = editor.scrollTop;
+            highlightLayer.scrollLeft = editor.scrollLeft;
+        };
+
+        // Event listeners
+        editor.addEventListener('input', update);
+        editor.addEventListener('scroll', syncEditorScroll);
+
+        // Handle tab key
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                update();
+            }
+        });
+
+        // Template selection
+        templateSelect.addEventListener('change', (e) => {
+            if (e.target.value && templates[e.target.value]) {
+                editor.value = templates[e.target.value];
+                update();
+            }
+            e.target.value = '';
+        });
+
+        // Clear editor
+        const clearEditor = () => {
+            editor.value = '';
+            update();
+            editor.focus();
+        };
+
+        // Export to HTML
+        const exportHTML = () => {
+            const content = preview.innerHTML;
+            const htmlTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Document</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #e6edf3;
+            background: #0d1117;
+        }
+        h1, h2 { border-bottom: 1px solid #30363d; padding-bottom: 0.3em; }
+        a { color: #58a6ff; }
+        code { background: #21262d; padding: 0.2em 0.4em; border-radius: 6px; font-size: 85%; }
+        pre { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #30363d; margin: 0; padding-left: 1em; color: #8b949e; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; }
+        th { background: #161b22; }
+        img { max-width: 100%; border-radius: 6px; }
+        hr { border: none; border-top: 2px solid #30363d; margin: 24px 0; }
+    </style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+
+            const blob = new Blob([htmlTemplate], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        // Initialize with README template
+        editor.value = templates.readme;
+        update();
+        editor.focus();
+    </script>
+</body>
+</html>

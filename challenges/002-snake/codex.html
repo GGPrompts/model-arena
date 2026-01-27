@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Snake — Codex Edition</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111a33;
+      --grid: #1a274d;
+      --text: #e6ecff;
+      --muted: #9fb0ff;
+      --accent: #7cf7ff;
+      --danger: #ff6b6b;
+      --snake: #5cff7a;
+      --snake-dark: #1ea94a;
+      --food: #ffcc33;
+      --food-dark: #cc8a00;
+      --pixel-size: 3px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background:
+        radial-gradient(1200px 800px at 20% -10%, #1a2a5a33, transparent 60%),
+        radial-gradient(900px 700px at 120% 20%, #123b6a44, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      image-rendering: pixelated;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 24px 16px 40px;
+    }
+
+    .wrap {
+      width: min(92vw, 860px);
+      display: grid;
+      gap: 14px;
+    }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #1a2b5a, var(--panel));
+      border: var(--pixel-size) solid #2f4da3;
+      box-shadow:
+        0 0 0 var(--pixel-size) #0a0f24,
+        0 10px 24px #00000055,
+        inset 0 0 0 var(--pixel-size) #243a7a;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+    }
+
+    .hud .left,
+    .hud .right {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .value {
+      color: var(--accent);
+      font-size: 18px;
+      text-shadow: 0 0 10px #7cf7ff44;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      opacity: 0.95;
+    }
+
+    .stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      background: linear-gradient(180deg, #142352, #0e1a3a);
+      border: var(--pixel-size) solid #2f4da3;
+      box-shadow:
+        0 0 0 var(--pixel-size) #0a0f24,
+        0 16px 30px #00000077,
+        inset 0 0 0 var(--pixel-size) #243a7a;
+      overflow: hidden;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(transparent 95%, #ffffff08 95%),
+        linear-gradient(90deg, transparent 95%, #ffffff07 95%);
+      background-size: 24px 24px, 24px 24px;
+      mix-blend-mode: screen;
+      opacity: 0.25;
+    }
+
+    canvas {
+      display: block;
+      width: min(92vw, 600px);
+      height: auto;
+      background:
+        linear-gradient(180deg, #0f1f4e, #0a1738);
+      border: var(--pixel-size) solid #3d66d6;
+      box-shadow:
+        0 0 0 var(--pixel-size) #0a0f24,
+        inset 0 0 0 var(--pixel-size) #27408a;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #060b1bdd;
+      border: var(--pixel-size) solid #2f4da3;
+      box-shadow:
+        inset 0 0 0 var(--pixel-size) #1b2e6a,
+        0 18px 40px #00000088;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .card {
+      max-width: 520px;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .title {
+      font-size: clamp(28px, 5vw, 44px);
+      margin: 0;
+      color: var(--danger);
+      text-transform: uppercase;
+      text-shadow:
+        0 0 18px #ff6b6b55,
+        0 0 2px #ff6b6b;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      margin: 2px 0 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .final {
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 800;
+      text-shadow: 0 0 12px #7cf7ff44;
+    }
+
+    .btn {
+      margin-top: 8px;
+      padding: 10px 16px;
+      border: var(--pixel-size) solid #4ee6ff;
+      background: linear-gradient(180deg, #2edbff, #1696c7);
+      color: #041226;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      cursor: pointer;
+      box-shadow:
+        0 0 0 var(--pixel-size) #0a0f24,
+        0 10px 16px #00000066,
+        inset 0 -2px 0 #0e6f99;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow:
+        0 0 0 var(--pixel-size) #0a0f24,
+        0 6px 12px #00000066,
+        inset 0 -1px 0 #0e6f99;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      opacity: 0.95;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">
+      <div class="left">
+        <span class="label">Score</span>
+        <span id="score" class="value">0</span>
+        <span class="label">Best</span>
+        <span id="best" class="value">0</span>
+      </div>
+      <div class="right">
+        <span class="hint">Move: WASD / Arrows</span>
+        <span class="hint">Restart: R / Enter / Space</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="game" width="600" height="600" aria-label="Snake game canvas"></canvas>
+      <div id="overlay" class="overlay" role="dialog" aria-live="polite">
+        <div class="card">
+          <h1 class="title">Game Over</h1>
+          <div class="subtitle">The snake bit the dust.</div>
+          <div id="finalScore" class="final">Score: 0</div>
+          <button id="restartBtn" class="btn" type="button">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Eat food, grow longer, and survive as the speed ramps up.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // --- Canvas & grid configuration ---------------------------------------------------------
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      const overlay = document.getElementById("overlay");
+      const restartBtn = document.getElementById("restartBtn");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const finalScoreEl = document.getElementById("finalScore");
+
+      const GRID_SIZE = 24;              // 24 x 24 tiles
+      const TILE = canvas.width / GRID_SIZE;
+      const BOARD_PX = canvas.width;
+
+      // Retro palette
+      const COLORS = {
+        bgA: "#0a1738",
+        bgB: "#0f2358",
+        grid: "#1a3170",
+        snake: "#5cff7a",
+        snakeDark: "#1ea94a",
+        snakeOutline: "#0d5f2a",
+        head: "#9bffae",
+        headOutline: "#2dc35a",
+        food: "#ffcc33",
+        foodDark: "#cc8a00",
+        foodOutline: "#7a4f00",
+        glow: "#7cf7ff"
+      };
+
+      // --- Game state --------------------------------------------------------------------------
+      let snake = [];
+      let prevSnake = [];
+      let food = { x: 0, y: 0 };
+
+      let direction = { x: 1, y: 0 };
+      let nextDirection = { x: 1, y: 0 };
+
+      let score = 0;
+      let best = loadBest();
+
+      let running = true;
+      let gameOver = false;
+
+      // Timing / animation
+      const BASE_STEP_MS = 160;
+      const MIN_STEP_MS = 70;
+      const SPEED_STEP_MS = 3;           // ms faster per point
+
+      let stepMs = BASE_STEP_MS;
+      let accumulator = 0;
+      let lastTime = 0;
+      let interp = 0;                    // interpolation factor between steps [0..1]
+
+      // Direction input queue helps keep inputs responsive at higher speeds.
+      const dirQueue = [];
+
+      // --- Helpers -----------------------------------------------------------------------------
+      function loadBest() {
+        try {
+          const v = Number(localStorage.getItem("snake-best") || 0);
+          return Number.isFinite(v) ? v : 0;
+        } catch {
+          return 0;
+        }
+      }
+
+      function saveBest(value) {
+        try {
+          localStorage.setItem("snake-best", String(value));
+        } catch {
+          // Ignore storage failures (e.g., privacy mode).
+        }
+      }
+
+      function updateHud() {
+        scoreEl.textContent = String(score);
+        bestEl.textContent = String(best);
+      }
+
+      function clampStepMs() {
+        stepMs = Math.max(MIN_STEP_MS, BASE_STEP_MS - score * SPEED_STEP_MS);
+      }
+
+      function sameDir(a, b) {
+        return a.x === b.x && a.y === b.y;
+      }
+
+      function isOpposite(a, b) {
+        return a.x === -b.x && a.y === -b.y;
+      }
+
+      function inBounds(p) {
+        return p.x >= 0 && p.x < GRID_SIZE && p.y >= 0 && p.y < GRID_SIZE;
+      }
+
+      function collidesWithSnake(p, arr = snake) {
+        for (let i = 0; i < arr.length; i += 1) {
+          if (arr[i].x === p.x && arr[i].y === p.y) return true;
+        }
+        return false;
+      }
+
+      function randInt(n) {
+        return Math.floor(Math.random() * n);
+      }
+
+      function spawnFood() {
+        // Try random positions, then fall back to a scan if the board is crowded.
+        for (let tries = 0; tries < 200; tries += 1) {
+          const candidate = { x: randInt(GRID_SIZE), y: randInt(GRID_SIZE) };
+          if (!collidesWithSnake(candidate)) {
+            food = candidate;
+            return;
+          }
+        }
+
+        for (let y = 0; y < GRID_SIZE; y += 1) {
+          for (let x = 0; x < GRID_SIZE; x += 1) {
+            const candidate = { x, y };
+            if (!collidesWithSnake(candidate)) {
+              food = candidate;
+              return;
+            }
+          }
+        }
+      }
+
+      function resetSnake() {
+        const mid = Math.floor(GRID_SIZE / 2);
+        snake = [
+          { x: mid - 2, y: mid },
+          { x: mid - 1, y: mid },
+          { x: mid, y: mid }
+        ];
+        prevSnake = snake.map(p => ({ ...p }));
+        direction = { x: 1, y: 0 };
+        nextDirection = { x: 1, y: 0 };
+        dirQueue.length = 0;
+      }
+
+      function resetGame() {
+        score = 0;
+        running = true;
+        gameOver = false;
+        accumulator = 0;
+        interp = 0;
+        clampStepMs();
+        resetSnake();
+        spawnFood();
+        updateHud();
+        hideOverlay();
+      }
+
+      function showOverlay() {
+        finalScoreEl.textContent = `Score: ${score}`;
+        overlay.classList.add("show");
+      }
+
+      function hideOverlay() {
+        overlay.classList.remove("show");
+      }
+
+      function endGame() {
+        running = false;
+        gameOver = true;
+        if (score > best) {
+          best = score;
+          saveBest(best);
+          updateHud();
+        }
+        showOverlay();
+      }
+
+      // --- Input -------------------------------------------------------------------------------
+      const DIRS = {
+        ArrowUp: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 },
+        w: { x: 0, y: -1 },
+        W: { x: 0, y: -1 },
+        s: { x: 0, y: 1 },
+        S: { x: 0, y: 1 },
+        a: { x: -1, y: 0 },
+        A: { x: -1, y: 0 },
+        d: { x: 1, y: 0 },
+        D: { x: 1, y: 0 }
+      };
+
+      function queueDirection(dir) {
+        const lastQueued = dirQueue.length ? dirQueue[dirQueue.length - 1] : nextDirection;
+        if (isOpposite(dir, lastQueued) || sameDir(dir, lastQueued)) return;
+        dirQueue.push(dir);
+      }
+
+      window.addEventListener("keydown", (e) => {
+        const dir = DIRS[e.key];
+        if (dir) {
+          e.preventDefault();
+          if (gameOver) {
+            resetGame();
+            return;
+          }
+          queueDirection(dir);
+          return;
+        }
+
+        if (e.key === "r" || e.key === "R" || e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          resetGame();
+        }
+      }, { passive: false });
+
+      restartBtn.addEventListener("click", () => resetGame());
+
+      // --- Game update -------------------------------------------------------------------------
+      function applyQueuedDirection() {
+        if (!dirQueue.length) return;
+        const candidate = dirQueue.shift();
+        if (!isOpposite(candidate, direction)) {
+          nextDirection = candidate;
+        }
+      }
+
+      function step() {
+        if (!running) return;
+
+        // Keep a snapshot to interpolate from.
+        prevSnake = snake.map(p => ({ ...p }));
+
+        applyQueuedDirection();
+        direction = nextDirection;
+
+        const head = snake[snake.length - 1];
+        const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+        if (!inBounds(newHead)) {
+          endGame();
+          return;
+        }
+
+        // Move body forward.
+        snake.push(newHead);
+
+        const ate = newHead.x === food.x && newHead.y === food.y;
+        if (ate) {
+          score += 1;
+          clampStepMs();
+          spawnFood();
+          updateHud();
+        } else {
+          snake.shift();
+        }
+
+        // Self-collision check (skip the newly added head at the end).
+        for (let i = 0; i < snake.length - 1; i += 1) {
+          if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+            endGame();
+            return;
+          }
+        }
+
+        if (snake.length === GRID_SIZE * GRID_SIZE) {
+          // Perfect game; treat as game over with a win-like state.
+          endGame();
+        }
+      }
+
+      // --- Rendering ----------------------------------------------------------------------------
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function drawPixelRect(px, py, w, h, fill, outline) {
+        ctx.fillStyle = fill;
+        ctx.fillRect(px, py, w, h);
+        if (outline) {
+          ctx.strokeStyle = outline;
+          ctx.lineWidth = Math.max(1, Math.floor(TILE * 0.12));
+          ctx.strokeRect(px + 0.5, py + 0.5, w - 1, h - 1);
+        }
+      }
+
+      function drawBackground() {
+        const g = ctx.createLinearGradient(0, 0, 0, BOARD_PX);
+        g.addColorStop(0, COLORS.bgB);
+        g.addColorStop(1, COLORS.bgA);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, BOARD_PX, BOARD_PX);
+
+        // Subtle grid shading
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        for (let y = 0; y < GRID_SIZE; y += 1) {
+          for (let x = 0; x < GRID_SIZE; x += 1) {
+            if ((x + y) % 2 === 0) continue;
+            ctx.fillStyle = COLORS.grid;
+            ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          }
+        }
+        ctx.restore();
+
+        // Border glow
+        ctx.save();
+        ctx.strokeStyle = COLORS.glow;
+        ctx.globalAlpha = 0.18;
+        ctx.lineWidth = Math.max(2, Math.floor(TILE * 0.18));
+        ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, BOARD_PX - ctx.lineWidth, BOARD_PX - ctx.lineWidth);
+        ctx.restore();
+      }
+
+      function drawFood(t) {
+        const pulse = 0.08 * Math.sin(t * 0.01) + 0.92;
+        const pad = TILE * (0.18 + (1 - pulse) * 0.05);
+        const size = TILE - pad * 2;
+        const px = food.x * TILE + pad;
+        const py = food.y * TILE + pad;
+
+        drawPixelRect(px, py, size, size, COLORS.food, COLORS.foodOutline);
+
+        // Highlight
+        ctx.fillStyle = COLORS.foodDark;
+        const bite = Math.max(2, Math.floor(size * 0.28));
+        ctx.fillRect(px + size - bite, py, bite, bite);
+      }
+
+      function drawSnake(t) {
+        const count = snake.length;
+        const prevCount = prevSnake.length;
+        const minCount = Math.min(count, prevCount);
+
+        // Draw from tail to head so the head is always on top.
+        for (let i = 0; i < count; i += 1) {
+          const cur = snake[i];
+          const prev = i < minCount ? prevSnake[i] : cur;
+
+          const ix = lerp(prev.x, cur.x, interp);
+          const iy = lerp(prev.y, cur.y, interp);
+
+          const isHead = i === count - 1;
+          const basePad = isHead ? 0.08 : 0.12;
+          const wiggle = isHead ? 0.015 * Math.sin(t * 0.02) : 0;
+          const pad = TILE * (basePad + wiggle);
+          const size = TILE - pad * 2;
+          const px = ix * TILE + pad;
+          const py = iy * TILE + pad;
+
+          const fill = isHead ? COLORS.head : COLORS.snake;
+          const outline = isHead ? COLORS.headOutline : COLORS.snakeOutline;
+          drawPixelRect(px, py, size, size, fill, outline);
+
+          // Pixel "scales" on body segments.
+          if (!isHead && size > 6) {
+            ctx.fillStyle = COLORS.snakeDark;
+            const scale = Math.max(2, Math.floor(size * 0.2));
+            ctx.fillRect(px + scale, py + scale, scale, scale);
+          }
+        }
+
+        // Head details (eyes + direction notch).
+        const head = snake[count - 1];
+        const prevHead = prevSnake[prevCount - 1] || head;
+        const hx = lerp(prevHead.x, head.x, interp);
+        const hy = lerp(prevHead.y, head.y, interp);
+        const pad = TILE * 0.1;
+        const size = TILE - pad * 2;
+        const px = hx * TILE + pad;
+        const py = hy * TILE + pad;
+
+        const eyeSize = Math.max(2, Math.floor(size * 0.12));
+        const eyeOffset = Math.max(3, Math.floor(size * 0.22));
+
+        // Compute eye positions based on current direction.
+        let ex1 = px + eyeOffset;
+        let ey1 = py + eyeOffset;
+        let ex2 = px + size - eyeOffset - eyeSize;
+        let ey2 = ey1;
+
+        if (direction.y !== 0) {
+          ex1 = px + eyeOffset;
+          ex2 = px + size - eyeOffset - eyeSize;
+          if (direction.y < 0) {
+            ey1 = py + eyeOffset;
+          } else {
+            ey1 = py + size - eyeOffset - eyeSize;
+          }
+          ey2 = ey1;
+        } else if (direction.x !== 0) {
+          ey1 = py + eyeOffset;
+          ey2 = py + size - eyeOffset - eyeSize;
+          if (direction.x < 0) {
+            ex1 = px + eyeOffset;
+          } else {
+            ex1 = px + size - eyeOffset - eyeSize;
+          }
+          ex2 = ex1;
+        }
+
+        ctx.fillStyle = "#0a1a0c";
+        ctx.fillRect(ex1, ey1, eyeSize, eyeSize);
+        ctx.fillRect(ex2, ey2, eyeSize, eyeSize);
+
+        // Direction notch (mouth).
+        ctx.fillStyle = "#1a3b20";
+        const notch = Math.max(2, Math.floor(size * 0.16));
+        if (direction.x > 0) ctx.fillRect(px + size - notch, py + size / 2 - notch / 2, notch, notch);
+        if (direction.x < 0) ctx.fillRect(px, py + size / 2 - notch / 2, notch, notch);
+        if (direction.y > 0) ctx.fillRect(px + size / 2 - notch / 2, py + size - notch, notch, notch);
+        if (direction.y < 0) ctx.fillRect(px + size / 2 - notch / 2, py, notch, notch);
+      }
+
+      function render(time) {
+        drawBackground();
+        drawFood(time);
+        drawSnake(time);
+      }
+
+      // --- Main loop ---------------------------------------------------------------------------
+      function frame(time) {
+        if (!lastTime) lastTime = time;
+        let dt = time - lastTime;
+        lastTime = time;
+
+        // Avoid huge catch-up steps when the tab was inactive.
+        if (dt > 120) dt = 120;
+
+        if (running) {
+          accumulator += dt;
+
+          // Use the current step size, which may shrink as score increases.
+          while (accumulator >= stepMs) {
+            accumulator -= stepMs;
+            step();
+            if (!running) break;
+          }
+
+          interp = stepMs > 0 ? Math.min(1, accumulator / stepMs) : 1;
+        } else {
+          interp = 1;
+        }
+
+        render(time);
+        window.requestAnimationFrame(frame);
+      }
+
+      // --- Boot --------------------------------------------------------------------------------
+      bestEl.textContent = String(best);
+      resetGame();
+      window.requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
+

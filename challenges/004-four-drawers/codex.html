@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Four Drawers Wireframe</title>
+  <style>
+    :root {
+      --bg: #f7f7f8;
+      --ink: #222;
+      --muted: #666;
+      --line: #d9d9de;
+      --panel: #ffffff;
+      --handle: 18px;
+
+      --top-max: 180px;
+      --bottom-max: 200px;
+      --left-max: 240px;
+      --right-max: 240px;
+
+      /* Start "closed" but with the handle visible. */
+      --top-open: var(--handle);
+      --bottom-open: var(--handle);
+      --left-open: var(--handle);
+      --right-open: var(--handle);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    body.dragging .drawer {
+      transition: none;
+    }
+
+    .frame {
+      position: relative;
+      min-height: 100%;
+      overflow: hidden;
+    }
+
+    .center {
+      position: relative;
+      z-index: 1;
+      max-width: 880px;
+      margin: 72px auto;
+      padding: 28px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(18, 18, 24, 0.06);
+    }
+
+    .center h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: 0.2px;
+    }
+
+    .center p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .wire-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .wire-box {
+      height: 86px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.015), rgba(0,0,0,0.005));
+    }
+
+    .hint {
+      margin-top: 18px;
+      padding: 10px 12px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      background: #fcfcfd;
+    }
+
+    /* Drawers */
+    .drawer {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 30px rgba(17, 17, 24, 0.12);
+      z-index: 3;
+      transition: transform 220ms ease;
+      will-change: transform;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .drawer header {
+      padding: 10px 14px 8px;
+      font-size: 13px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: #fbfbfd;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .drawer .content {
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--ink);
+      overflow: auto;
+      height: 100%;
+    }
+
+    .drawer .content p {
+      margin: 0 0 10px;
+      color: var(--muted);
+    }
+
+    .handle {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      background: #f0f1f4;
+      border: 1px solid var(--line);
+      color: #8a8f9c;
+      font-size: 12px;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .handle::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: #c6cad4;
+      box-shadow:
+        0 6px 0 #c6cad4,
+        0 -6px 0 #c6cad4;
+    }
+
+    /* Top drawer */
+    .drawer.top {
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--top-max);
+      transform: translateY(calc(-1 * (var(--top-max) - var(--top-open))));
+      border-radius: 0 0 12px 12px;
+    }
+
+    .drawer.top .handle {
+      bottom: calc(-1 * var(--handle));
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: var(--handle);
+      border-radius: 0 0 10px 10px;
+      cursor: row-resize;
+    }
+
+    /* Bottom drawer */
+    .drawer.bottom {
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--bottom-max);
+      transform: translateY(calc(var(--bottom-max) - var(--bottom-open)));
+      border-radius: 12px 12px 0 0;
+    }
+
+    .drawer.bottom .handle {
+      top: calc(-1 * var(--handle));
+      left: 50%;
+      transform: translateX(-50%) rotate(180deg);
+      width: 110px;
+      height: var(--handle);
+      border-radius: 10px 10px 0 0;
+      cursor: row-resize;
+    }
+
+    /* Left drawer */
+    .drawer.left {
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: var(--left-max);
+      transform: translateX(calc(-1 * (var(--left-max) - var(--left-open))));
+      border-radius: 0 12px 12px 0;
+    }
+
+    .drawer.left .handle {
+      right: calc(-1 * var(--handle));
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+      width: 110px;
+      height: var(--handle);
+      border-radius: 0 10px 10px 0;
+      cursor: col-resize;
+    }
+
+    /* Right drawer */
+    .drawer.right {
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: var(--right-max);
+      transform: translateX(calc(var(--right-max) - var(--right-open)));
+      border-radius: 12px 0 0 12px;
+    }
+
+    .drawer.right .handle {
+      left: calc(-1 * var(--handle));
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+      width: 110px;
+      height: var(--handle);
+      border-radius: 10px 0 0 10px;
+      cursor: col-resize;
+    }
+
+    /* Subtle layering so drawers feel distinct but minimal. */
+    .drawer.left, .drawer.right {
+      box-shadow: 0 14px 36px rgba(17, 17, 24, 0.14);
+    }
+
+    /* Small screens: slightly smaller drawers. */
+    @media (max-width: 720px) {
+      :root {
+        --left-max: 210px;
+        --right-max: 210px;
+        --top-max: 160px;
+        --bottom-max: 180px;
+      }
+
+      .center {
+        margin: 64px 16px 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <main class="center" aria-label="Main content">
+      <h1>Four Drawers Layout</h1>
+      <p>
+        This wireframe demonstrates drawers that slide in from the top, bottom,
+        left, and right. Pull any handle to open or close its drawer.
+      </p>
+
+      <div class="wire-row" aria-hidden="true">
+        <div class="wire-box"></div>
+        <div class="wire-box"></div>
+        <div class="wire-box"></div>
+        <div class="wire-box"></div>
+        <div class="wire-box"></div>
+        <div class="wire-box"></div>
+      </div>
+
+      <div class="hint">
+        Tip: drag the visible handles at each edge. The drawers keep a small
+        "peek" so their handles remain accessible.
+      </div>
+    </main>
+  </div>
+
+  <!-- Top Drawer -->
+  <aside class="drawer top" data-side="top" aria-label="Top drawer">
+    <header>Top Drawer</header>
+    <div class="content">
+      <p>Quick filters</p>
+      <p>- Date range</p>
+      <p>- Status toggles</p>
+      <p>- Segments</p>
+    </div>
+    <div class="handle" data-handle="top" aria-label="Drag top drawer handle" role="separator"></div>
+  </aside>
+
+  <!-- Bottom Drawer -->
+  <aside class="drawer bottom" data-side="bottom" aria-label="Bottom drawer">
+    <header>Bottom Drawer</header>
+    <div class="content">
+      <p>Activity log</p>
+      <p>- 12:03 - Draft saved</p>
+      <p>- 12:05 - Comment added</p>
+      <p>- 12:07 - Drawer opened</p>
+      <p>- 12:10 - Sync complete</p>
+    </div>
+    <div class="handle" data-handle="bottom" aria-label="Drag bottom drawer handle" role="separator"></div>
+  </aside>
+
+  <!-- Left Drawer -->
+  <aside class="drawer left" data-side="left" aria-label="Left drawer">
+    <header>Left Drawer</header>
+    <div class="content">
+      <p>Navigation</p>
+      <p>- Overview</p>
+      <p>- Projects</p>
+      <p>- Reports</p>
+      <p>- Settings</p>
+    </div>
+    <div class="handle" data-handle="left" aria-label="Drag left drawer handle" role="separator"></div>
+  </aside>
+
+  <!-- Right Drawer -->
+  <aside class="drawer right" data-side="right" aria-label="Right drawer">
+    <header>Right Drawer</header>
+    <div class="content">
+      <p>Inspector</p>
+      <p>- Selected: Card A</p>
+      <p>- Size: 320 x 160</p>
+      <p>- Padding: 16</p>
+      <p>- Notes: placeholder</p>
+    </div>
+    <div class="handle" data-handle="right" aria-label="Drag right drawer handle" role="separator"></div>
+  </aside>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const handles = Array.from(document.querySelectorAll("[data-handle]"));
+
+      const cfg = {
+        top: { openVar: "--top-open", maxVar: "--top-max", axis: "y" },
+        bottom: { openVar: "--bottom-open", maxVar: "--bottom-max", axis: "y" },
+        left: { openVar: "--left-open", maxVar: "--left-max", axis: "x" },
+        right: { openVar: "--right-open", maxVar: "--right-max", axis: "x" },
+      };
+
+      function pxToNumber(value) {
+        return Number(String(value).replace("px", "")) || 0;
+      }
+
+      function getVarPx(name) {
+        return pxToNumber(getComputedStyle(root).getPropertyValue(name));
+      }
+
+      function clamp(n, min, max) {
+        return Math.min(max, Math.max(min, n));
+      }
+
+      let drag = null;
+
+      function startDrag(side, ev) {
+        const handleSize = getVarPx("--handle");
+        const max = getVarPx(cfg[side].maxVar);
+        const current = getVarPx(cfg[side].openVar);
+
+        drag = {
+          side,
+          startX: ev.clientX,
+          startY: ev.clientY,
+          startOpen: current,
+          min: handleSize,
+          max,
+        };
+
+        document.body.classList.add("dragging");
+        ev.currentTarget.setPointerCapture(ev.pointerId);
+      }
+
+      function moveDrag(ev) {
+        if (!drag) return;
+
+        const { side, startX, startY, startOpen, min, max } = drag;
+        let delta = 0;
+
+        if (side === "top") {
+          delta = ev.clientY - startY;
+        } else if (side === "bottom") {
+          delta = startY - ev.clientY;
+        } else if (side === "left") {
+          delta = ev.clientX - startX;
+        } else if (side === "right") {
+          delta = startX - ev.clientX;
+        }
+
+        const next = clamp(startOpen + delta, min, max);
+        root.style.setProperty(cfg[side].openVar, `${next}px`);
+      }
+
+      function endDrag(ev) {
+        if (!drag) return;
+        try {
+          ev.currentTarget.releasePointerCapture(ev.pointerId);
+        } catch (e) {
+          /* no-op: capture may already be released */
+        }
+        drag = null;
+        document.body.classList.remove("dragging");
+      }
+
+      handles.forEach((handle) => {
+        const side = handle.getAttribute("data-handle");
+        handle.addEventListener("pointerdown", (ev) => startDrag(side, ev));
+        handle.addEventListener("pointermove", moveDrag);
+        handle.addEventListener("pointerup", endDrag);
+        handle.addEventListener("pointercancel", endDrag);
+        handle.addEventListener("lostpointercapture", endDrag);
+      });
+
+      // Double click a handle to toggle between peek and fully open.
+      handles.forEach((handle) => {
+        const side = handle.getAttribute("data-handle");
+        handle.addEventListener("dblclick", () => {
+          const handleSize = getVarPx("--handle");
+          const max = getVarPx(cfg[side].maxVar);
+          const current = getVarPx(cfg[side].openVar);
+          const mid = (handleSize + max) / 2;
+          const target = current < mid ? max : handleSize;
+          root.style.setProperty(cfg[side].openVar, `${target}px`);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Four Drawers</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .main-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 1.2rem;
+    }
+
+    /* Drawer base styles */
+    .drawer {
+      position: fixed;
+      background: #fff;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .drawer-content {
+      padding: 20px;
+      color: #333;
+    }
+
+    .drawer-content h2 {
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: #222;
+    }
+
+    .drawer-content p {
+      color: #666;
+      line-height: 1.6;
+    }
+
+    /* Handle base styles */
+    .handle {
+      position: absolute;
+      background: #e0e0e0;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .handle:hover {
+      background: #d0d0d0;
+    }
+
+    .handle:active {
+      cursor: grabbing;
+    }
+
+    .handle-grip {
+      background: #999;
+      border-radius: 2px;
+    }
+
+    /* Left drawer */
+    .drawer-left {
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 100%;
+      transform: translateX(-280px);
+    }
+
+    .drawer-left .handle {
+      right: -24px;
+      top: 0;
+      width: 24px;
+      height: 100%;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .drawer-left .handle-grip {
+      width: 4px;
+      height: 40px;
+    }
+
+    /* Right drawer */
+    .drawer-right {
+      top: 0;
+      right: 0;
+      width: 280px;
+      height: 100%;
+      transform: translateX(280px);
+    }
+
+    .drawer-right .handle {
+      left: -24px;
+      top: 0;
+      width: 24px;
+      height: 100%;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .drawer-right .handle-grip {
+      width: 4px;
+      height: 40px;
+    }
+
+    /* Top drawer */
+    .drawer-top {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      transform: translateY(-200px);
+    }
+
+    .drawer-top .handle {
+      bottom: -24px;
+      left: 0;
+      width: 100%;
+      height: 24px;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .drawer-top .handle-grip {
+      width: 40px;
+      height: 4px;
+    }
+
+    /* Bottom drawer */
+    .drawer-bottom {
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      transform: translateY(200px);
+    }
+
+    .drawer-bottom .handle {
+      top: -24px;
+      left: 0;
+      width: 100%;
+      height: 24px;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .drawer-bottom .handle-grip {
+      width: 40px;
+      height: 4px;
+    }
+
+    /* Open states */
+    .drawer-left.open {
+      transform: translateX(0);
+    }
+
+    .drawer-right.open {
+      transform: translateX(0);
+    }
+
+    .drawer-top.open {
+      transform: translateY(0);
+    }
+
+    .drawer-bottom.open {
+      transform: translateY(0);
+    }
+
+    /* Dragging state */
+    .drawer.dragging {
+      transition: none;
+    }
+
+    /* Placeholder list items */
+    .placeholder-list {
+      list-style: none;
+      margin-top: 16px;
+    }
+
+    .placeholder-list li {
+      padding: 10px 12px;
+      background: #f8f8f8;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .placeholder-list li:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-content">
+    <p>Pull the handles on any edge to open drawers</p>
+  </div>
+
+  <!-- Left Drawer -->
+  <div class="drawer drawer-left" id="drawer-left">
+    <div class="handle" data-drawer="left">
+      <div class="handle-grip"></div>
+    </div>
+    <div class="drawer-content">
+      <h2>Navigation</h2>
+      <p>Quick links and menu items</p>
+      <ul class="placeholder-list">
+        <li>Dashboard</li>
+        <li>Projects</li>
+        <li>Messages</li>
+        <li>Settings</li>
+        <li>Help & Support</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Right Drawer -->
+  <div class="drawer drawer-right" id="drawer-right">
+    <div class="handle" data-drawer="right">
+      <div class="handle-grip"></div>
+    </div>
+    <div class="drawer-content">
+      <h2>Details Panel</h2>
+      <p>Additional information and properties</p>
+      <ul class="placeholder-list">
+        <li>Created: Jan 15, 2025</li>
+        <li>Modified: Jan 20, 2025</li>
+        <li>Status: Active</li>
+        <li>Owner: User</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Top Drawer -->
+  <div class="drawer drawer-top" id="drawer-top">
+    <div class="handle" data-drawer="top">
+      <div class="handle-grip"></div>
+    </div>
+    <div class="drawer-content">
+      <h2>Notifications</h2>
+      <p>Recent alerts and updates will appear here. Stay informed about important changes.</p>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer -->
+  <div class="drawer drawer-bottom" id="drawer-bottom">
+    <div class="handle" data-drawer="bottom">
+      <div class="handle-grip"></div>
+    </div>
+    <div class="drawer-content">
+      <h2>Quick Actions</h2>
+      <p>Frequently used tools and shortcuts for faster workflow.</p>
+    </div>
+  </div>
+
+  <script>
+    const drawers = {
+      left: { el: document.getElementById('drawer-left'), size: 280, axis: 'x', sign: 1 },
+      right: { el: document.getElementById('drawer-right'), size: 280, axis: 'x', sign: -1 },
+      top: { el: document.getElementById('drawer-top'), size: 200, axis: 'y', sign: 1 },
+      bottom: { el: document.getElementById('drawer-bottom'), size: 200, axis: 'y', sign: -1 }
+    };
+
+    let activeDrawer = null;
+    let startPos = 0;
+    let startOffset = 0;
+
+    // Get current drawer offset from transform
+    function getDrawerOffset(drawer) {
+      const style = window.getComputedStyle(drawer.el);
+      const transform = style.transform;
+      if (transform === 'none') return 0;
+      const matrix = new DOMMatrix(transform);
+      return drawer.axis === 'x' ? matrix.m41 : matrix.m42;
+    }
+
+    // Set drawer position during drag
+    function setDrawerPosition(drawer, offset) {
+      const clampedOffset = drawer.sign > 0
+        ? Math.max(-drawer.size, Math.min(0, offset))
+        : Math.min(drawer.size, Math.max(0, offset));
+
+      const transform = drawer.axis === 'x'
+        ? `translateX(${clampedOffset}px)`
+        : `translateY(${clampedOffset}px)`;
+      drawer.el.style.transform = transform;
+    }
+
+    // Handle drag start
+    function handleDragStart(e) {
+      const handle = e.target.closest('.handle');
+      if (!handle) return;
+
+      const drawerId = handle.dataset.drawer;
+      activeDrawer = drawers[drawerId];
+
+      activeDrawer.el.classList.add('dragging');
+      startPos = activeDrawer.axis === 'x' ? e.clientX : e.clientY;
+      startOffset = getDrawerOffset(activeDrawer);
+
+      e.preventDefault();
+    }
+
+    // Handle drag move
+    function handleDragMove(e) {
+      if (!activeDrawer) return;
+
+      const currentPos = activeDrawer.axis === 'x' ? e.clientX : e.clientY;
+      const delta = (currentPos - startPos) * activeDrawer.sign;
+      const newOffset = startOffset + delta * activeDrawer.sign;
+
+      setDrawerPosition(activeDrawer, newOffset);
+    }
+
+    // Handle drag end
+    function handleDragEnd() {
+      if (!activeDrawer) return;
+
+      activeDrawer.el.classList.remove('dragging');
+
+      const offset = getDrawerOffset(activeDrawer);
+      const threshold = activeDrawer.size / 2;
+      const isOpen = activeDrawer.sign > 0
+        ? offset > -threshold
+        : offset < threshold;
+
+      activeDrawer.el.style.transform = '';
+      if (isOpen) {
+        activeDrawer.el.classList.add('open');
+      } else {
+        activeDrawer.el.classList.remove('open');
+      }
+
+      activeDrawer = null;
+    }
+
+    // Mouse events
+    document.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+
+    // Touch events
+    document.addEventListener('touchstart', (e) => {
+      handleDragStart(e.touches[0]);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (activeDrawer) {
+        e.preventDefault();
+        handleDragMove(e.touches[0]);
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', handleDragEnd);
+
+    // Click to toggle
+    document.querySelectorAll('.handle').forEach(handle => {
+      handle.addEventListener('click', (e) => {
+        // Only toggle if not dragged
+        if (Math.abs(e.clientX - startPos) < 5 && Math.abs(e.clientY - startPos) < 5) {
+          const drawer = drawers[handle.dataset.drawer];
+          drawer.el.classList.toggle('open');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

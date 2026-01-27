@@ -1,0 +1,12 @@
+{
+  "id": "003-markdown-editor",
+  "title": "Markdown Editor",
+  "date": "2026-01-26",
+  "prompt": "Create a Markdown editor with live preview in one HTML file. Include: split pane view (editor left, preview right), syntax highlighting in the editor, proper markdown rendering (headers, lists, code blocks, links, images), a few example templates to load, and export to HTML button. Dark theme, modern aesthetic. All self-contained.",
+  "contestants": ["claude-opus-4.5", "gpt-5.2-codex", "gemini-native"],
+  "answers": {
+    "a": "gemini-native",
+    "b": "claude-opus-4.5",
+    "c": "gpt-5.2-codex"
+  }
+}

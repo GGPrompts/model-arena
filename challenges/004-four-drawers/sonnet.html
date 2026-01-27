@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Four Drawers</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .main-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 1.2rem;
+    }
+
+    .drawer {
+      position: fixed;
+      background: #fff;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .drawer-content {
+      padding: 24px;
+      color: #333;
+    }
+
+    .drawer-content h2 {
+      margin-bottom: 16px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .drawer-content p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .drawer-content ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .drawer-content li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      color: #555;
+    }
+
+    .handle {
+      position: absolute;
+      background: #e8e8e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .handle:hover {
+      background: #ddd;
+    }
+
+    .handle:active {
+      cursor: grabbing;
+      background: #d0d0d0;
+    }
+
+    .handle-bar {
+      background: #999;
+      border-radius: 2px;
+    }
+
+    /* Left Drawer */
+    .drawer-left {
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 100%;
+      transform: translateX(-300px);
+    }
+
+    .drawer-left .handle {
+      right: -24px;
+      top: 0;
+      width: 24px;
+      height: 100%;
+    }
+
+    .drawer-left .handle-bar {
+      width: 4px;
+      height: 40px;
+    }
+
+    .drawer-left.open {
+      transform: translateX(0);
+    }
+
+    /* Right Drawer */
+    .drawer-right {
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 100%;
+      transform: translateX(300px);
+    }
+
+    .drawer-right .handle {
+      left: -24px;
+      top: 0;
+      width: 24px;
+      height: 100%;
+    }
+
+    .drawer-right .handle-bar {
+      width: 4px;
+      height: 40px;
+    }
+
+    .drawer-right.open {
+      transform: translateX(0);
+    }
+
+    /* Top Drawer */
+    .drawer-top {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      transform: translateY(-200px);
+    }
+
+    .drawer-top .handle {
+      bottom: -24px;
+      left: 0;
+      width: 100%;
+      height: 24px;
+    }
+
+    .drawer-top .handle-bar {
+      width: 40px;
+      height: 4px;
+    }
+
+    .drawer-top.open {
+      transform: translateY(0);
+    }
+
+    /* Bottom Drawer */
+    .drawer-bottom {
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      transform: translateY(200px);
+    }
+
+    .drawer-bottom .handle {
+      top: -24px;
+      left: 0;
+      width: 100%;
+      height: 24px;
+    }
+
+    .drawer-bottom .handle-bar {
+      width: 40px;
+      height: 4px;
+    }
+
+    .drawer-bottom.open {
+      transform: translateY(0);
+    }
+
+    /* Dragging state */
+    .drawer.dragging {
+      transition: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-content">
+    <p>Drag the handles on any edge to open drawers</p>
+  </div>
+
+  <!-- Left Drawer -->
+  <div class="drawer drawer-left" id="drawer-left">
+    <div class="drawer-content">
+      <h2>Navigation</h2>
+      <ul>
+        <li>Dashboard</li>
+        <li>Projects</li>
+        <li>Team</li>
+        <li>Calendar</li>
+        <li>Settings</li>
+      </ul>
+    </div>
+    <div class="handle" data-drawer="left">
+      <div class="handle-bar"></div>
+    </div>
+  </div>
+
+  <!-- Right Drawer -->
+  <div class="drawer drawer-right" id="drawer-right">
+    <div class="drawer-content">
+      <h2>Notifications</h2>
+      <ul>
+        <li>New message from Alex</li>
+        <li>Project deadline tomorrow</li>
+        <li>Meeting at 3:00 PM</li>
+        <li>Review pending</li>
+      </ul>
+    </div>
+    <div class="handle" data-drawer="right">
+      <div class="handle-bar"></div>
+    </div>
+  </div>
+
+  <!-- Top Drawer -->
+  <div class="drawer drawer-top" id="drawer-top">
+    <div class="drawer-content">
+      <h2>Quick Actions</h2>
+      <p>Access frequently used features and shortcuts from this panel. Drag down to expand or up to collapse.</p>
+    </div>
+    <div class="handle" data-drawer="top">
+      <div class="handle-bar"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Drawer -->
+  <div class="drawer drawer-bottom" id="drawer-bottom">
+    <div class="drawer-content">
+      <h2>Details Panel</h2>
+      <p>Additional information and context appears here. Use this space for supplementary content that doesn't need to be always visible.</p>
+    </div>
+    <div class="handle" data-drawer="bottom">
+      <div class="handle-bar"></div>
+    </div>
+  </div>
+
+  <script>
+    const drawers = {
+      left: { el: document.getElementById('drawer-left'), size: 300, axis: 'x', dir: 1 },
+      right: { el: document.getElementById('drawer-right'), size: 300, axis: 'x', dir: -1 },
+      top: { el: document.getElementById('drawer-top'), size: 200, axis: 'y', dir: 1 },
+      bottom: { el: document.getElementById('drawer-bottom'), size: 200, axis: 'y', dir: -1 }
+    };
+
+    let activeDrawer = null;
+    let startPos = 0;
+    let startOffset = 0;
+
+    function getDrawerOffset(drawer) {
+      const transform = drawer.el.style.transform;
+      const match = transform.match(/translate[XY]\((-?\d+(?:\.\d+)?)px\)/);
+      if (match) return parseFloat(match[1]);
+      return drawer.el.classList.contains('open') ? 0 : -drawer.size * drawer.dir;
+    }
+
+    function setDrawerOffset(drawer, offset) {
+      const prop = drawer.axis === 'x' ? 'translateX' : 'translateY';
+      const clamped = drawer.dir === 1
+        ? Math.max(-drawer.size, Math.min(0, offset))
+        : Math.min(drawer.size, Math.max(0, offset));
+      drawer.el.style.transform = `${prop}(${clamped}px)`;
+      return clamped;
+    }
+
+    document.querySelectorAll('.handle').forEach(handle => {
+      handle.addEventListener('mousedown', startDrag);
+      handle.addEventListener('touchstart', startDrag, { passive: false });
+    });
+
+    function startDrag(e) {
+      e.preventDefault();
+      const drawerId = e.currentTarget.dataset.drawer;
+      activeDrawer = drawers[drawerId];
+      activeDrawer.el.classList.add('dragging');
+
+      const pos = e.type === 'touchstart' ? e.touches[0] : e;
+      startPos = activeDrawer.axis === 'x' ? pos.clientX : pos.clientY;
+      startOffset = getDrawerOffset(activeDrawer);
+
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('touchmove', onDrag, { passive: false });
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchend', endDrag);
+    }
+
+    function onDrag(e) {
+      if (!activeDrawer) return;
+      e.preventDefault();
+
+      const pos = e.type === 'touchmove' ? e.touches[0] : e;
+      const currentPos = activeDrawer.axis === 'x' ? pos.clientX : pos.clientY;
+      const delta = currentPos - startPos;
+      setDrawerOffset(activeDrawer, startOffset + delta);
+    }
+
+    function endDrag() {
+      if (!activeDrawer) return;
+
+      activeDrawer.el.classList.remove('dragging');
+      const currentOffset = getDrawerOffset(activeDrawer);
+      const threshold = activeDrawer.size * 0.3;
+
+      // Determine if drawer should be open or closed
+      const shouldOpen = activeDrawer.dir === 1
+        ? currentOffset > -activeDrawer.size + threshold
+        : currentOffset < activeDrawer.size - threshold;
+
+      activeDrawer.el.style.transform = '';
+      if (shouldOpen) {
+        activeDrawer.el.classList.add('open');
+      } else {
+        activeDrawer.el.classList.remove('open');
+      }
+
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('touchmove', onDrag);
+      document.removeEventListener('mouseup', endDrag);
+      document.removeEventListener('touchend', endDrag);
+      activeDrawer = null;
+    }
+  </script>
+</body>
+</html>

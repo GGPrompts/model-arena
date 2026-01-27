@@ -1,0 +1,12 @@
+{
+  "id": "001-chronovoyage",
+  "title": "ChronoVoyage",
+  "date": "2026-01-26",
+  "prompt": "Create a single HTML file for a time-travel tourism agency called \"ChronoVoyage\". Make it creative and fun with CSS animations. Include: a hero section with a catchy tagline, 3-4 destination time periods to visit (e.g., Ancient Rome, Roaring 20s, Year 3000), pricing tiers, and a booking CTA. All in one self-contained index.html with inline CSS/JS.",
+  "contestants": ["claude-opus-4.5", "gpt-5.2-codex", "gemini-3-pro"],
+  "answers": {
+    "a": "gemini-3-pro",
+    "b": "claude-opus-4.5",
+    "c": "gpt-5.2-codex"
+  }
+}

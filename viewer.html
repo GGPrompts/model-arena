@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Arena</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a25;
+      --border: #2a2a3a;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --accent: #667eea;
+      --accent-hover: #5a6fd6;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Screen states */
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* === INTRO SCREEN === */
+    #intro {
+      padding: 2rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .intro-content {
+      max-width: 900px;
+      text-align: center;
+    }
+
+    .challenge-number {
+      font-size: 0.875rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .challenge-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .prompt-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+      text-align: left;
+    }
+
+    .prompt-label {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+
+    .prompt-text {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* Model ID Cards */
+    .model-cards {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .model-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      min-width: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .model-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--card-color, var(--accent));
+    }
+
+    .model-card-letter {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      opacity: 0.3;
+    }
+
+    .model-card-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .model-card-mystery {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .model-card-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      opacity: 0.7;
+    }
+
+    .start-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 1rem 3rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .start-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    .contestants-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    /* === VIEWER SCREEN === */
+    #viewer {
+      height: 100vh;
+    }
+
+    .viewer-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .nav-left, .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--border);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .current-site {
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+
+    .current-site .letter {
+      color: var(--accent);
+    }
+
+    .progress {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .guess-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guess-label {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .guess-buttons {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .guess-btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 2px solid var(--border);
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .guess-btn:hover {
+      border-color: var(--btn-color, var(--accent));
+    }
+
+    .guess-btn.selected {
+      background: var(--btn-color, var(--accent));
+      border-color: var(--btn-color, var(--accent));
+      color: white;
+    }
+
+    .guess-btn .icon {
+      font-size: 1rem;
+    }
+
+    .iframe-container {
+      flex: 1;
+      position: relative;
+    }
+
+    .iframe-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+    }
+
+    /* === RESULTS SCREEN === */
+    #results {
+      padding: 2rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .results-content {
+      max-width: 700px;
+      text-align: center;
+    }
+
+    .results-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .score {
+      font-size: 4rem;
+      font-weight: 700;
+      margin: 1.5rem 0;
+    }
+
+    .score .correct {
+      color: var(--success);
+    }
+
+    .score .total {
+      color: var(--text-muted);
+    }
+
+    .results-breakdown {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+
+    .result-row:last-child {
+      border-bottom: none;
+    }
+
+    .result-site {
+      font-weight: 600;
+      font-size: 1.25rem;
+      min-width: 70px;
+    }
+
+    .result-site .letter {
+      color: var(--accent);
+    }
+
+    .result-details {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-model-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface-2);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--model-color, var(--accent));
+    }
+
+    .result-model-icon {
+      font-size: 1.5rem;
+    }
+
+    .result-model-info {
+      text-align: left;
+    }
+
+    .result-model-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .result-model-company {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-guess {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .result-status {
+      font-size: 1.5rem;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .play-again-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 1rem;
+    }
+
+    .play-again-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .back-home {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-top: 1rem;
+      display: inline-block;
+    }
+
+    .back-home:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- INTRO SCREEN -->
+  <div id="intro" class="screen active">
+    <div class="intro-content">
+      <p class="challenge-number">Challenge <span id="challenge-id"></span></p>
+      <h1 class="challenge-title" id="challenge-title"></h1>
+
+      <div class="prompt-box">
+        <p class="prompt-label">The Prompt</p>
+        <p class="prompt-text" id="prompt-text"></p>
+      </div>
+
+      <p class="contestants-label">Today's Contestants</p>
+      <div class="model-cards" id="model-cards">
+        <!-- Generated by JS -->
+      </div>
+
+      <button class="start-btn" onclick="startViewing()">Start Guessing</button>
+    </div>
+  </div>
+
+  <!-- VIEWER SCREEN -->
+  <div id="viewer" class="screen">
+    <div class="viewer-nav">
+      <div class="nav-left">
+        <button class="nav-btn" onclick="prevSite()" id="prev-btn" disabled>&larr; Back</button>
+        <span class="current-site">Site <span class="letter" id="current-letter">A</span></span>
+        <span class="progress" id="progress">(1/3)</span>
+      </div>
+      <div class="nav-right">
+        <div class="guess-wrapper">
+          <span class="guess-label">My guess:</span>
+          <div class="guess-buttons" id="guess-buttons">
+            <!-- Generated by JS -->
+          </div>
+        </div>
+        <button class="nav-btn" onclick="nextSite()" id="next-btn">Next &rarr;</button>
+      </div>
+    </div>
+    <div class="iframe-container">
+      <iframe id="site-frame"></iframe>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results" class="screen">
+    <div class="results-content">
+      <h1 class="results-title">Results</h1>
+      <div class="score">
+        <span class="correct" id="correct-count">0</span>
+        <span class="total" id="total-count">/ 3</span>
+      </div>
+
+      <div class="results-breakdown" id="results-breakdown">
+        <!-- Filled by JS -->
+      </div>
+
+      <button class="play-again-btn" onclick="resetChallenge()">Try Again</button>
+      <br>
+      <a href="index.html" class="back-home">&larr; All Challenges</a>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let modelRegistry = {};
+    let challengeData = null;
+    let currentSite = 0;
+    let sites = [];
+    let guesses = {};
+
+    // Get challenge ID from URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const challengeId = urlParams.get('c') || '001-chronovoyage';
+
+    // Load model registry and challenge data
+    async function init() {
+      try {
+        // Load registry
+        const regRes = await fetch('models.json');
+        modelRegistry = await regRes.json();
+        delete modelRegistry._meta;
+        delete modelRegistry._template;
+
+        // Load challenge
+        const chalRes = await fetch(`challenges/${challengeId}/meta.json`);
+        challengeData = await chalRes.json();
+
+        // Setup sites based on answers
+        sites = Object.keys(challengeData.answers);
+        sites.forEach(s => guesses[s] = '');
+
+        // Populate UI
+        populateIntro();
+        populateGuessButtons();
+
+      } catch (err) {
+        console.error('Failed to load:', err);
+        alert('Failed to load challenge. Make sure you\'re running from a local server.');
+      }
+    }
+
+    function populateIntro() {
+      document.getElementById('challenge-id').textContent = challengeData.id.split('-')[0];
+      document.getElementById('challenge-title').textContent = challengeData.title;
+      document.getElementById('prompt-text').textContent = challengeData.prompt;
+      document.getElementById('total-count').textContent = `/ ${sites.length}`;
+
+      // Generate model cards (mystery)
+      const cardsContainer = document.getElementById('model-cards');
+      cardsContainer.innerHTML = '';
+
+      sites.forEach((letter, i) => {
+        const card = document.createElement('div');
+        card.className = 'model-card';
+        card.innerHTML = `
+          <div class="model-card-letter">${letter.toUpperCase()}</div>
+          <div class="model-card-icon">❓</div>
+          <div class="model-card-mystery">???</div>
+          <div class="model-card-hint">Who made this?</div>
+        `;
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    function populateGuessButtons() {
+      const container = document.getElementById('guess-buttons');
+      container.innerHTML = '';
+
+      challengeData.contestants.forEach(modelId => {
+        const model = modelRegistry[modelId];
+        if (!model) return;
+
+        const btn = document.createElement('button');
+        btn.className = 'guess-btn';
+        btn.dataset.modelId = modelId;
+        btn.style.setProperty('--btn-color', model.color);
+        btn.innerHTML = `<span class="icon">${model.icon}</span> ${model.name}`;
+        btn.onclick = () => selectGuess(modelId);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectGuess(modelId) {
+      const letter = sites[currentSite];
+      guesses[letter] = modelId;
+
+      // Update button states
+      document.querySelectorAll('.guess-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.modelId === modelId);
+      });
+    }
+
+    // Screen navigation
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Start viewing sites
+    function startViewing() {
+      currentSite = 0;
+      showScreen('viewer');
+      loadSite();
+    }
+
+    // Load current site
+    function loadSite() {
+      const letter = sites[currentSite];
+      document.getElementById('current-letter').textContent = letter.toUpperCase();
+      document.getElementById('progress').textContent = `(${currentSite + 1}/${sites.length})`;
+      document.getElementById('site-frame').src = `challenges/${challengeId}/${letter}.html`;
+
+      // Update guess buttons
+      document.querySelectorAll('.guess-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.modelId === guesses[letter]);
+      });
+
+      // Update nav buttons
+      document.getElementById('prev-btn').disabled = currentSite === 0;
+      document.getElementById('next-btn').textContent =
+        currentSite === sites.length - 1 ? 'See Results →' : 'Next →';
+    }
+
+    // Navigation
+    function prevSite() {
+      if (currentSite > 0) {
+        currentSite--;
+        loadSite();
+      }
+    }
+
+    function nextSite() {
+      if (currentSite < sites.length - 1) {
+        currentSite++;
+        loadSite();
+      } else {
+        showResults();
+      }
+    }
+
+    // Show results
+    function showResults() {
+      showScreen('results');
+
+      let correct = 0;
+      const breakdown = document.getElementById('results-breakdown');
+      breakdown.innerHTML = '';
+
+      for (const letter of sites) {
+        const actualId = challengeData.answers[letter];
+        const actualModel = modelRegistry[actualId];
+        const guessId = guesses[letter];
+        const guessModel = guessId ? modelRegistry[guessId] : null;
+        const isCorrect = guessId === actualId;
+
+        if (isCorrect) correct++;
+
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        row.innerHTML = `
+          <span class="result-site">Site <span class="letter">${letter.toUpperCase()}</span></span>
+          <div class="result-details">
+            <div class="result-model-card" style="--model-color: ${actualModel.color}">
+              <span class="result-model-icon">${actualModel.icon}</span>
+              <div class="result-model-info">
+                <div class="result-model-name">${actualModel.name}</div>
+                <div class="result-model-company">${actualModel.company}</div>
+              </div>
+            </div>
+            <span class="result-guess">You said: ${guessModel ? guessModel.name : '(none)'}</span>
+          </div>
+          <span class="result-status">${isCorrect ? '✅' : '❌'}</span>
+        `;
+        breakdown.appendChild(row);
+      }
+
+      document.getElementById('correct-count').textContent = correct;
+    }
+
+    // Reset
+    function resetChallenge() {
+      sites.forEach(s => guesses[s] = '');
+      showScreen('intro');
+    }
+
+    // Init
+    init();
+  </script>
+</body>
+</html>

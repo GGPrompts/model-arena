@@ -1,0 +1,13 @@
+{
+  "id": "004-four-drawers",
+  "title": "Four-Sided Drawers",
+  "date": "2026-01-26",
+  "prompt": "Create a functional wireframe of a web page with drawers that can open from all four sides (top, bottom, left, right). Each drawer should have a visible handle that can be pulled/dragged to extend or collapse it. The drawers should animate smoothly. Include some placeholder content in each drawer. Clean minimal styling. All in one self-contained HTML file.",
+  "contestants": ["claude-opus-4.5", "claude-sonnet-4.5", "gpt-5.2-codex", "gemini-native"],
+  "answers": {
+    "a": "claude-opus-4.5",
+    "b": "gpt-5.2-codex",
+    "c": "gemini-native",
+    "d": "claude-sonnet-4.5"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "005-ridiculous-drawers",
+  "title": "Ridiculous Drawers",
+  "date": "2026-01-26",
+  "prompt": "Create an absurdly over-engineered single HTML page with a ridiculous amount of sliding panels, elastic sidebars, and tabs. Panels on all four edges, nested drawers, tabs within tabs, collapsible sections everywhere. Everything should have smooth elastic/bouncy animations. Make it functional chaos - every panel and tab should actually work. The more ridiculous the better. Dark theme. Self-contained HTML file.",
+  "contestants": ["opus-swarm", "sonnet-swarm", "haiku-swarm"],
+  "note": "Swarm battle: 3x Opus (9x cost) vs 3x Sonnet (3x cost) vs 3x Haiku (1x cost)",
+  "answers": {
+    "a": "sonnet-swarm",
+    "b": "haiku-swarm",
+    "c": "opus-swarm"
+  }
+}

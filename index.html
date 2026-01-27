@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Arena</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #2a2a3a;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --accent: #667eea;
+      --accent-hover: #5a6fd6;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 3rem 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .logo {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 500px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+
+    .how-it-works {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 3rem;
+    }
+
+    .step {
+      text-align: center;
+      max-width: 180px;
+    }
+
+    .step-num {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin: 0 auto 0.75rem;
+    }
+
+    .step-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .challenges {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .challenge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.2s, transform 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .challenge-card:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    .challenge-info {
+      flex: 1;
+    }
+
+    .challenge-id {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.25rem;
+    }
+
+    .challenge-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .challenge-prompt {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .challenge-models {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: 2rem;
+    }
+
+    .model-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .play-arrow {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin-left: 1.5rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1 class="logo">Model Arena</h1>
+      <p class="tagline">Same prompt. Three AI models. Can you guess which made which?</p>
+
+      <div class="how-it-works">
+        <div class="step">
+          <div class="step-num">1</div>
+          <p class="step-text">Read the prompt given to all models</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <p class="step-text">View each site and make your guess</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <p class="step-text">See results and learn the tells</p>
+        </div>
+      </div>
+    </div>
+
+    <h2>Challenges</h2>
+    <div class="challenges" id="challenges">
+      <div class="empty-state">Loading challenges...</div>
+    </div>
+
+    <footer>
+      Built with Claude, Codex, and Gemini &mdash; <a href="https://github.com/GGPrompts">GGPrompts</a>
+    </footer>
+  </div>
+
+  <script>
+    // Challenge registry - add new challenges here
+    const challengeIds = [
+      '005-ridiculous-drawers',
+      '004-four-drawers',
+      '003-markdown-editor',
+      '002-snake',
+      '001-chronovoyage'
+    ];
+
+    let modelRegistry = {};
+
+    async function loadChallenges() {
+      const container = document.getElementById('challenges');
+      container.innerHTML = '';
+
+      // Load model registry first
+      try {
+        const regRes = await fetch('models.json');
+        modelRegistry = await regRes.json();
+        delete modelRegistry._meta;
+        delete modelRegistry._template;
+      } catch (err) {
+        console.error('Failed to load model registry:', err);
+      }
+
+      for (const id of challengeIds) {
+        try {
+          const res = await fetch(`challenges/${id}/meta.json`);
+          const data = await res.json();
+
+          const card = document.createElement('a');
+          card.href = `viewer.html?c=${id}`;
+          card.className = 'challenge-card';
+
+          const modelDots = data.contestants
+            .map(modelId => {
+              const m = modelRegistry[modelId];
+              return m ? `<div class="model-dot" style="background: ${m.color}" title="${m.name} (${m.company})"></div>` : '';
+            })
+            .join('');
+
+          card.innerHTML = `
+            <div class="challenge-info">
+              <p class="challenge-id">#${data.id.split('-')[0]}</p>
+              <h3 class="challenge-name">${data.title}</h3>
+              <p class="challenge-prompt">${data.prompt}</p>
+            </div>
+            <div class="challenge-models">${modelDots}</div>
+            <span class="play-arrow">&#8250;</span>
+          `;
+
+          container.appendChild(card);
+        } catch (err) {
+          console.error(`Failed to load ${id}:`, err);
+        }
+      }
+
+      if (container.children.length === 0) {
+        container.innerHTML = '<div class="empty-state">No challenges found</div>';
+      }
+    }
+
+    loadChallenges();
+  </script>
+</body>
+</html>

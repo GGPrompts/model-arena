@@ -1,0 +1,172 @@
+{
+  "_meta": {
+    "description": "Model registry for Model Arena",
+    "pricing": "Multiplier relative to standard (1x). 0x = free, 0.33x = cheap, 3x = premium",
+    "reasoning": "Codex models support reasoning levels (1-4, or 1-2 for mini). Higher = more thinking."
+  },
+
+  "claude-sonnet-4.5": {
+    "name": "Sonnet 4.5",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "4.5",
+    "color": "#f97316",
+    "icon": "🎭",
+    "traits": ["Balanced", "Default"],
+    "cli": "claude --model sonnet",
+    "pricing": 1
+  },
+  "claude-haiku-4.5": {
+    "name": "Haiku 4.5",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "4.5",
+    "color": "#fb923c",
+    "icon": "🪶",
+    "traits": ["Fast", "Cheap"],
+    "cli": "claude --model haiku",
+    "pricing": 0.33
+  },
+  "claude-opus-4.5": {
+    "name": "Opus 4.5",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "4.5",
+    "color": "#dc2626",
+    "icon": "🎼",
+    "traits": ["Powerful", "Creative"],
+    "cli": "claude --model opus",
+    "pricing": 3
+  },
+  "claude-sonnet-4": {
+    "name": "Sonnet 4",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "4",
+    "color": "#ea580c",
+    "icon": "🎭",
+    "traits": ["Previous Gen"],
+    "cli": "claude --model sonnet-4",
+    "pricing": 1
+  },
+
+  "gpt-5.2-codex": {
+    "name": "GPT-5.2 Codex",
+    "family": "GPT",
+    "company": "OpenAI",
+    "version": "5.2-codex",
+    "color": "#059669",
+    "icon": "💻",
+    "traits": ["Latest", "Agentic"],
+    "cli": "codex",
+    "reasoning_levels": [1, 2, 3, 4],
+    "pricing": 1
+  },
+  "gpt-5.2": {
+    "name": "GPT-5.2",
+    "family": "GPT",
+    "company": "OpenAI",
+    "version": "5.2",
+    "color": "#10a37f",
+    "icon": "🧠",
+    "traits": ["Frontier", "General"],
+    "cli": "codex --model gpt-5.2",
+    "reasoning_levels": [1, 2, 3, 4],
+    "pricing": 1
+  },
+  "gpt-5.1-codex-max": {
+    "name": "GPT-5.1 Codex Max",
+    "family": "GPT",
+    "company": "OpenAI",
+    "version": "5.1-codex-max",
+    "color": "#047857",
+    "icon": "🚀",
+    "traits": ["Deep Reasoning", "Fast"],
+    "cli": "codex --model gpt-5.1-codex-max",
+    "reasoning_levels": [1, 2, 3, 4],
+    "pricing": 1
+  },
+  "gpt-5.1-codex-mini": {
+    "name": "GPT-5.1 Codex Mini",
+    "family": "GPT",
+    "company": "OpenAI",
+    "version": "5.1-codex-mini",
+    "color": "#34d399",
+    "icon": "⚡",
+    "traits": ["Fast", "Cheap"],
+    "cli": "codex --model gpt-5.1-codex-mini",
+    "reasoning_levels": [1, 2],
+    "pricing": 0.33
+  },
+
+  "gemini-3-pro": {
+    "name": "Gemini 3 Pro",
+    "family": "Gemini",
+    "company": "Google",
+    "version": "3-pro-preview",
+    "color": "#6366f1",
+    "icon": "♊",
+    "traits": ["Preview", "Multimodal"],
+    "cli": "copilot",
+    "note": "Via GitHub Copilot - may be limited",
+    "pricing": 1
+  },
+  "gemini-native": {
+    "name": "Gemini (Native)",
+    "family": "Gemini",
+    "company": "Google",
+    "version": "2.5-pro",
+    "color": "#8b5cf6",
+    "icon": "💎",
+    "traits": ["Full Power", "Limited Free"],
+    "cli": "gemini",
+    "pricing": 1
+  },
+
+  "opus-swarm": {
+    "name": "Opus Swarm",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "3x Opus 4.5",
+    "color": "#dc2626",
+    "icon": "🐝",
+    "traits": ["3 Subagents", "Premium Swarm"],
+    "cli": "claude --model opus (x3)",
+    "pricing": 9
+  },
+  "sonnet-swarm": {
+    "name": "Sonnet Swarm",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "3x Sonnet 4.5",
+    "color": "#f97316",
+    "icon": "🐝",
+    "traits": ["3 Subagents", "Balanced Swarm"],
+    "cli": "claude --model sonnet (x3)",
+    "pricing": 3
+  },
+  "haiku-swarm": {
+    "name": "Haiku Swarm",
+    "family": "Claude",
+    "company": "Anthropic",
+    "version": "3x Haiku 4.5",
+    "color": "#fb923c",
+    "icon": "🐝",
+    "traits": ["3 Subagents", "Budget Swarm"],
+    "cli": "claude --model haiku (x3)",
+    "pricing": 1
+  },
+
+  "_template": {
+    "name": "Model Name",
+    "family": "Family",
+    "company": "Company",
+    "version": "1.0",
+    "color": "#888888",
+    "icon": "🤖",
+    "traits": ["Trait1", "Trait2"],
+    "cli": "command",
+    "reasoning_levels": [1, 2, 3, 4],
+    "pricing": 1
+  }
+}

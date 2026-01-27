@@ -1,0 +1,12 @@
+{
+  "id": "002-snake",
+  "title": "Snake Game",
+  "date": "2026-01-26",
+  "prompt": "Build a fully playable Snake game in a single HTML file. Include: animated snake movement, food spawning, score tracking, speed increase as score grows, game over screen with restart, and retro pixel art styling. Keyboard controls (WASD or arrows). All self-contained.",
+  "contestants": ["claude-opus-4.5", "gpt-5.2-codex", "gemini-3-pro"],
+  "answers": {
+    "a": "gpt-5.2-codex",
+    "b": "gemini-3-pro",
+    "c": "claude-opus-4.5"
+  }
+}

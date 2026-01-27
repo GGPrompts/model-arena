@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIDICULOUS DRAWERS - Maximum Over-Engineering</title>
+    <style>
+        :root {
+            --color-bg-primary: #0a0a0f;
+            --color-bg-secondary: #12121a;
+            --color-bg-tertiary: #1a1a25;
+            --color-bg-elevated: #222230;
+            --color-bg-hover: #2a2a3a;
+            --color-surface-dark: #0d0d14;
+            --color-surface-medium: #161620;
+            --color-neon-cyan: #00ffff;
+            --color-neon-magenta: #ff00ff;
+            --color-neon-lime: #39ff14;
+            --color-neon-orange: #ff6600;
+            --color-neon-pink: #ff1493;
+            --color-neon-blue: #00bfff;
+            --color-neon-purple: #bf00ff;
+            --color-neon-yellow: #ffff00;
+            --glow-cyan: 0 0 10px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan);
+            --glow-magenta: 0 0 10px var(--color-neon-magenta), 0 0 20px var(--color-neon-magenta);
+            --color-text-primary: #e8e8f0;
+            --color-text-secondary: #a0a0b0;
+            --color-text-muted: #606070;
+            --color-border-default: #2a2a3a;
+            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            --ease-bounce-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            --duration-fast: 200ms;
+            --duration-normal: 350ms;
+            --duration-panel: 450ms;
+            --panel-top-height: 200px;
+            --panel-bottom-height: 280px;
+            --panel-left-width: 300px;
+            --panel-right-width: 320px;
+            --z-panel: 100;
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--color-bg-primary); color: var(--color-text-primary); line-height: 1.5; }
+
+        /* Main Content */
+        .main-content {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center;
+            background: radial-gradient(ellipse at 20% 30%, rgba(0,255,255,0.03), transparent 50%),
+                        radial-gradient(ellipse at 80% 70%, rgba(255,0,255,0.03), transparent 50%),
+                        var(--color-bg-primary);
+            z-index: 1; overflow-y: auto; padding: 80px 40px 120px;
+            transition: filter var(--duration-normal) ease;
+        }
+        .main-content.dimmed { filter: brightness(0.6); }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 {
+            font-size: 2.5rem; margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--color-neon-cyan), var(--color-neon-magenta), var(--color-neon-lime));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: glow 3s ease-in-out infinite;
+        }
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(0,255,255,0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255,0,255,0.5)); }
+        }
+        .badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+        .badge { background: rgba(0,255,255,0.1); border: 1px solid var(--color-neon-cyan); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; color: var(--color-neon-cyan); }
+
+        /* Edge Panels */
+        .edge-panel {
+            position: fixed; background: var(--color-bg-secondary); z-index: var(--z-panel);
+            transition: transform var(--duration-panel) var(--ease-bounce);
+        }
+        .panel-handle {
+            position: absolute; display: flex; align-items: center; justify-content: center;
+            background: var(--color-bg-elevated); border: 1px solid var(--color-border-default);
+            cursor: pointer; z-index: 110;
+            transition: all var(--duration-fast) var(--ease-bounce-soft);
+        }
+        .panel-handle:hover { background: var(--color-bg-hover); }
+
+        /* Top Panel */
+        .edge-panel--top { top: 0; left: 0; right: 0; height: var(--panel-top-height); border-bottom: 1px solid var(--color-border-default); box-shadow: 0 4px 20px rgba(0,255,255,0.1); }
+        .edge-panel--top[data-state="closed"] { transform: translateY(-100%); }
+        .edge-panel--top[data-state="open"] { transform: translateY(0); }
+        .edge-panel--top .panel-handle { bottom: -22px; left: 50%; transform: translateX(-50%); width: 44px; height: 44px; border-radius: 50%; border-color: var(--color-neon-cyan); }
+        .edge-panel--top .panel-handle:hover { box-shadow: 0 0 10px var(--color-neon-cyan); }
+
+        /* Bottom Panel */
+        .edge-panel--bottom { bottom: 0; left: 0; right: 0; height: var(--panel-bottom-height); border-top: 1px solid var(--color-border-default); box-shadow: 0 -4px 20px rgba(255,0,255,0.1); }
+        .edge-panel--bottom[data-state="closed"] { transform: translateY(100%); }
+        .edge-panel--bottom[data-state="open"] { transform: translateY(0); }
+        .edge-panel--bottom .panel-handle { top: -12px; left: 50%; transform: translateX(-50%); width: 80px; height: 24px; border-radius: var(--radius-lg); border-color: var(--color-neon-magenta); }
+        .edge-panel--bottom .panel-handle::after { content: ''; width: 40px; height: 4px; background: var(--color-neon-magenta); border-radius: 2px; }
+        .edge-panel--bottom .panel-handle:hover { box-shadow: 0 0 10px var(--color-neon-magenta); }
+
+        /* Left Panel */
+        .edge-panel--left { top: 0; bottom: 0; left: 0; width: var(--panel-left-width); border-right: 1px solid var(--color-border-default); box-shadow: 4px 0 20px rgba(57,255,20,0.1); }
+        .edge-panel--left[data-state="closed"] { transform: translateX(-100%); }
+        .edge-panel--left[data-state="open"] { transform: translateX(0); }
+        .edge-panel--left .panel-handle { right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 60px; border-radius: 0 var(--radius-md) var(--radius-md) 0; border-color: var(--color-neon-lime); flex-direction: column; gap: 4px; }
+        .edge-panel--left .panel-handle::before, .edge-panel--left .panel-handle::after { content: ''; width: 4px; height: 4px; background: var(--color-neon-lime); border-radius: 50%; }
+        .edge-panel--left .panel-handle:hover { box-shadow: 0 0 10px var(--color-neon-lime); }
+
+        /* Right Panel */
+        .edge-panel--right { top: 0; bottom: 0; right: 0; width: var(--panel-right-width); border-left: 1px solid var(--color-border-default); box-shadow: -4px 0 20px rgba(255,102,0,0.1); }
+        .edge-panel--right[data-state="closed"] { transform: translateX(100%); }
+        .edge-panel--right[data-state="open"] { transform: translateX(0); }
+        .edge-panel--right .panel-handle { left: -16px; top: 50%; transform: translateY(-50%); width: 32px; height: 80px; border-radius: var(--radius-md) 0 0 var(--radius-md); border-color: var(--color-neon-orange); writing-mode: vertical-rl; font-size: 0.7rem; font-weight: 600; color: var(--color-neon-orange); }
+        .edge-panel--right .panel-handle:hover { box-shadow: 0 0 10px var(--color-neon-orange); }
+
+        .panel-content { padding: var(--space-md); height: 100%; overflow-y: auto; }
+
+        /* Panel Content Styles */
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: var(--space-md); }
+        .setting-card { background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); padding: var(--space-md); text-align: center; cursor: pointer; transition: all var(--duration-fast) var(--ease-bounce-soft); }
+        .setting-card:hover { border-color: var(--color-neon-cyan); transform: translateY(-2px); }
+        .setting-card.active { border-color: var(--color-neon-cyan); box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        .setting-icon { font-size: 1.5rem; }
+        .setting-label { font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase; }
+
+        .console-box { background: var(--color-surface-dark); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); height: calc(100% - 30px); display: flex; flex-direction: column; }
+        .console-header { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--color-surface-medium); border-bottom: 1px solid var(--color-border-default); }
+        .console-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .console-dot.red { background: #ff5f56; }
+        .console-dot.yellow { background: #ffbd2e; }
+        .console-dot.green { background: #27c93f; }
+        .console-output { flex: 1; padding: var(--space-md); font-family: monospace; font-size: 0.85rem; overflow-y: auto; color: var(--color-neon-lime); }
+        .console-line::before { content: '> '; color: var(--color-neon-magenta); }
+        .console-input-wrap { display: flex; padding: var(--space-sm) var(--space-md); border-top: 1px solid var(--color-border-default); background: var(--color-surface-medium); }
+        .console-input { flex: 1; background: transparent; border: none; color: var(--color-text-primary); font-family: monospace; outline: none; }
+
+        .nav-section { margin-bottom: var(--space-lg); }
+        .nav-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-text-muted); margin-bottom: var(--space-sm); }
+        .nav-item { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-secondary); transition: all var(--duration-fast) ease; }
+        .nav-item:hover { background: var(--color-bg-hover); color: var(--color-text-primary); padding-left: var(--space-lg); }
+        .nav-item.active { background: linear-gradient(90deg, rgba(57,255,20,0.15), transparent); color: var(--color-neon-lime); border-left: 2px solid var(--color-neon-lime); }
+        .nav-badge { margin-left: auto; background: var(--color-neon-magenta); color: #000; font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 10px; }
+
+        .tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); margin-bottom: var(--space-lg); }
+        .tool-item { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); cursor: pointer; font-size: 1.2rem; transition: all var(--duration-fast) var(--ease-bounce); }
+        .tool-item:hover { border-color: var(--color-neon-orange); transform: scale(1.1); }
+        .tool-item.selected { background: rgba(255,102,0,0.2); border-color: var(--color-neon-orange); box-shadow: 0 0 8px var(--color-neon-orange); }
+        .tool-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: var(--space-sm); }
+
+        /* DRAWER INCEPTION */
+        .inception-zone {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #16213e);
+            border: 3px solid transparent; border-image: linear-gradient(135deg, var(--color-neon-cyan), var(--color-neon-magenta), var(--color-neon-lime)) 1;
+            border-radius: var(--radius-lg); padding: 25px; margin: 30px 0; max-width: 900px; width: 100%; position: relative; overflow: hidden;
+        }
+        .inception-zone::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(0,255,255,0.1) 60deg, transparent 120deg, rgba(255,0,255,0.1) 180deg, transparent 240deg, rgba(0,255,0,0.1) 300deg, transparent);
+            animation: spin 10s linear infinite; z-index: 0;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .inception-title { font-size: 1.5rem; color: var(--color-neon-cyan); text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(0,255,255,0.5); position: relative; z-index: 1; }
+        .inception-content { position: relative; z-index: 1; }
+
+        .drawer { margin: 10px 0; }
+        .drawer-trigger {
+            background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid var(--color-neon-cyan);
+            color: var(--color-text-primary); padding: 15px 25px; font-size: 1rem; cursor: pointer;
+            border-radius: var(--radius-md); display: flex; align-items: center; gap: 10px; width: 100%;
+            transition: all 0.3s var(--ease-bounce);
+        }
+        .drawer-trigger:hover { border-color: var(--color-neon-magenta); transform: scale(1.02); box-shadow: 0 0 20px rgba(0,255,255,0.3); }
+        .drawer-trigger::before { content: ''; border-left: 8px solid var(--color-neon-cyan); border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform 0.4s var(--ease-bounce); }
+        .drawer-trigger.open::before { transform: rotate(90deg); border-left-color: var(--color-neon-magenta); }
+        .drawer-trigger.open { animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 5px currentColor; } 50% { box-shadow: 0 0 20px currentColor; } }
+        .drawer-panel { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.5s var(--ease-bounce); background: rgba(10,10,15,0.95); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+        .drawer-panel.open { max-height: 2000px; opacity: 1; border: 2px solid var(--color-neon-cyan); border-top: none; }
+        .drawer-inner { padding: 20px; transform: translateY(-20px); opacity: 0; transition: all 0.4s var(--ease-bounce) 0.1s; }
+        .drawer-panel.open .drawer-inner { transform: translateY(0); opacity: 1; }
+
+        .drawer.level-2 { margin-left: 20px; }
+        .drawer.level-2 .drawer-trigger { border-color: var(--color-neon-magenta); font-size: 0.9rem; padding: 12px 20px; }
+        .drawer.level-2 .drawer-trigger::before { border-left-color: var(--color-neon-magenta); }
+        .drawer.level-2 .drawer-panel { border-color: var(--color-neon-magenta); }
+
+        .drawer.level-3 { margin-left: 20px; }
+        .drawer.level-3 .drawer-trigger { border-color: var(--color-neon-lime); font-size: 0.85rem; padding: 10px 18px; }
+        .drawer.level-3 .drawer-trigger::before { border-left-color: var(--color-neon-lime); }
+        .drawer.level-3 .drawer-panel { border-color: var(--color-neon-lime); }
+
+        .drawer.level-4 { margin-left: 20px; }
+        .drawer.level-4 .drawer-trigger { border: 2px dashed var(--color-neon-orange); font-size: 0.8rem; padding: 8px 15px; }
+        .drawer.level-4 .drawer-trigger::before { border-left-color: var(--color-neon-orange); }
+        .drawer.level-4 .drawer-panel { border-color: var(--color-neon-orange); }
+
+        /* Collapsibles */
+        .collapse { margin: 10px 0; }
+        .collapse-header {
+            background: linear-gradient(90deg, #1a1a2e, #16213e); border: 1px solid var(--color-neon-cyan);
+            color: var(--color-text-primary); padding: 12px 20px; cursor: pointer; display: flex;
+            justify-content: space-between; align-items: center; border-radius: var(--radius-md);
+            transition: all 0.3s var(--ease-bounce);
+        }
+        .collapse-header:hover { border-color: var(--color-neon-magenta); box-shadow: 0 0 15px rgba(255,0,255,0.2); }
+        .collapse-header.open { border-radius: var(--radius-md) var(--radius-md) 0 0; border-bottom: none; }
+        .collapse-icon { width: 20px; height: 20px; position: relative; transition: transform 0.5s var(--ease-bounce); }
+        .collapse-icon::before, .collapse-icon::after { content: ''; position: absolute; background: var(--color-neon-cyan); transition: all 0.3s ease; }
+        .collapse-icon::before { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+        .collapse-icon::after { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+        .collapse-header.open .collapse-icon { transform: rotate(180deg); }
+        .collapse-header.open .collapse-icon::after { height: 0; }
+        .collapse-body { max-height: 0; overflow: hidden; background: rgba(10,10,15,0.9); border: 1px solid var(--color-neon-cyan); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); transition: max-height 0.5s var(--ease-bounce); }
+        .collapse-body.open { max-height: 500px; }
+        .collapse-content { padding: 15px 20px; }
+
+        .collapse.nested { margin-left: 15px; }
+        .collapse.nested .collapse-header { border-color: var(--color-neon-magenta); padding: 10px 15px; font-size: 0.9rem; }
+        .collapse.nested .collapse-body { border-color: var(--color-neon-magenta); }
+        .collapse.nested .collapse.nested .collapse-header { border-color: var(--color-neon-lime); }
+        .collapse.nested .collapse.nested .collapse-body { border-color: var(--color-neon-lime); }
+
+        /* TAB INCEPTION */
+        .tab-zone {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #16213e); border: 3px solid var(--color-neon-cyan);
+            border-radius: 20px; padding: 30px; margin: 40px auto; max-width: 1200px; width: 100%;
+            box-shadow: 0 0 40px rgba(0,255,255,0.3), inset 0 0 60px rgba(0,0,0,0.5); position: relative;
+        }
+        .tab-zone::before {
+            content: "TAB INCEPTION ZONE"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--color-neon-magenta), var(--color-neon-cyan)); padding: 8px 30px;
+            border-radius: 20px; font-size: 14px; font-weight: bold; color: #0a0a0f; text-transform: uppercase;
+            letter-spacing: 3px; box-shadow: 0 0 20px rgba(255,0,255,0.5); animation: zonePulse 2s ease-in-out infinite;
+        }
+        @keyframes zonePulse { 0%, 100% { box-shadow: 0 0 20px rgba(255,0,255,0.5); } 50% { box-shadow: 0 0 40px rgba(0,255,255,0.8); } }
+        .depth-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 5px 12px; border-radius: 20px; font-size: 11px; color: var(--color-neon-cyan); border: 1px solid var(--color-neon-cyan); }
+
+        /* Level 1 Tabs */
+        .tabs-l1 { margin-top: 20px; }
+        .tabs-l1-nav { display: flex; gap: 5px; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px 15px 0 0; border-bottom: 2px solid var(--color-neon-cyan); flex-wrap: wrap; }
+        .tab-l1 {
+            flex: 1; min-width: 100px; padding: 15px 20px; background: linear-gradient(180deg, #1a1a2e, #0a0a0f);
+            border: 2px solid transparent; border-radius: 12px 12px 0 0; color: var(--color-text-primary);
+            font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.4s var(--ease-bounce); position: relative;
+        }
+        .tab-l1:hover { transform: translateY(-5px); border-color: var(--color-neon-cyan); box-shadow: 0 10px 30px rgba(0,255,255,0.3); }
+        .tab-l1.active { background: linear-gradient(180deg, var(--color-neon-cyan), #00cccc); color: #0a0a0f; transform: translateY(-8px) scale(1.05); box-shadow: 0 15px 40px rgba(0,255,255,0.5); }
+        .tabs-l1-content { background: rgba(10,10,15,0.8); border: 2px solid #1a1a2e; border-top: none; border-radius: 0 0 15px 15px; min-height: 350px; }
+        .tab-l1-panel { display: none; padding: 20px; animation: slideIn 0.5s var(--ease-bounce); }
+        .tab-l1-panel.active { display: block; }
+        @keyframes slideIn { 0% { opacity: 0; transform: translateX(-30px); } 50% { transform: translateX(5px); } 100% { opacity: 1; transform: translateX(0); } }
+
+        /* Level 2 Tabs */
+        .tabs-l2 { display: flex; gap: 15px; min-height: 300px; flex-wrap: wrap; }
+        .tabs-l2-nav { display: flex; flex-direction: column; gap: 8px; width: 150px; background: linear-gradient(180deg, #16213e, #0a0a0f); padding: 15px; border-radius: 12px; border: 2px solid var(--color-neon-magenta); }
+        .tab-l2 { padding: 12px 18px; background: rgba(255,0,255,0.1); border: 2px solid transparent; border-radius: 8px; color: var(--color-text-primary); font-size: 13px; cursor: pointer; transition: all 0.4s var(--ease-bounce); text-align: left; }
+        .tab-l2:hover { background: rgba(255,0,255,0.2); border-color: rgba(255,0,255,0.5); transform: translateX(8px); }
+        .tab-l2.active { background: linear-gradient(90deg, var(--color-neon-magenta), #cc00cc); color: #0a0a0f; transform: translateX(12px) scale(1.05); box-shadow: 0 0 25px rgba(255,0,255,0.5); }
+        .tabs-l2-content { flex: 1; min-width: 280px; background: rgba(22,33,62,0.5); border-radius: 12px; border: 2px solid #1a1a2e; }
+        .tab-l2-panel { display: none; padding: 20px; height: 100%; animation: fadeIn 0.5s var(--ease-bounce); }
+        .tab-l2-panel.active { display: block; }
+        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(20px); } 60% { transform: translateY(-5px); } 100% { opacity: 1; transform: translateY(0); } }
+
+        /* Level 3 Tabs */
+        .tabs-l3 { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; }
+        .tabs-l3-nav { display: flex; gap: 10px; background: rgba(0,255,0,0.1); padding: 8px; border-radius: 50px; margin-bottom: 15px; border: 2px solid rgba(0,255,0,0.3); flex-wrap: wrap; }
+        .tab-l3 { flex: 1; min-width: 70px; padding: 10px 15px; background: transparent; border: none; border-radius: 50px; color: var(--color-neon-lime); font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: all 0.4s var(--ease-bounce); }
+        .tab-l3:hover { background: rgba(0,255,0,0.2); transform: scale(1.05); }
+        .tab-l3.active { background: linear-gradient(135deg, var(--color-neon-lime), #00cc00); color: #0a0a0f; box-shadow: 0 0 20px rgba(0,255,0,0.5); transform: scale(1.1); }
+        .tabs-l3-content { background: rgba(0,255,0,0.05); border-radius: 15px; border: 1px solid rgba(0,255,0,0.2); min-height: 120px; }
+        .tab-l3-panel { display: none; padding: 15px; animation: elastic 0.6s var(--ease-elastic); }
+        .tab-l3-panel.active { display: block; }
+        @keyframes elastic { 0% { opacity: 0; transform: scale(0.8) rotate(-2deg); } 50% { transform: scale(1.05) rotate(1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+
+        /* Level 4 Tabs */
+        .tabs-l4 { margin-top: 10px; }
+        .tabs-l4-nav { display: flex; gap: 5px; border-bottom: 2px solid rgba(255,107,0,0.3); padding-bottom: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tab-l4 { padding: 8px 15px; background: transparent; border: none; color: var(--color-neon-orange); font-size: 12px; font-weight: 600; cursor: pointer; position: relative; transition: all 0.3s var(--ease-bounce); }
+        .tab-l4::after { content: ''; position: absolute; bottom: -7px; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--color-neon-orange), var(--color-neon-yellow)); border-radius: 3px; transform: scaleX(0); transition: transform 0.4s var(--ease-bounce); }
+        .tab-l4:hover { color: var(--color-neon-yellow); transform: translateY(-2px); }
+        .tab-l4:hover::after { transform: scaleX(0.5); }
+        .tab-l4.active { transform: translateY(-4px); }
+        .tab-l4.active::after { transform: scaleX(1); }
+        .tabs-l4-content { background: rgba(255,107,0,0.05); border-radius: 8px; padding: 10px; min-height: 50px; }
+        .tab-l4-panel { display: none; animation: miniSlide 0.4s var(--ease-bounce); }
+        .tab-l4-panel.active { display: block; }
+        @keyframes miniSlide { 0% { opacity: 0; transform: translateX(-15px); } 100% { opacity: 1; transform: translateX(0); } }
+
+        /* Interactive Elements */
+        .toggle-row { display: flex; align-items: center; gap: 15px; margin: 10px 0; }
+        .toggle { position: relative; width: 60px; height: 30px; cursor: pointer; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; inset: 0; background: linear-gradient(180deg, #1a1a2e, #0a0a0f); border: 2px solid #333; border-radius: 30px; transition: all 0.4s var(--ease-bounce); }
+        .toggle-slider::before { content: ''; position: absolute; width: 22px; height: 22px; left: 4px; top: 50%; transform: translateY(-50%); background: linear-gradient(135deg, #e0e0e0, #aaa); border-radius: 50%; transition: all 0.4s var(--ease-bounce); }
+        .toggle input:checked + .toggle-slider { background: linear-gradient(180deg, var(--color-neon-cyan), #00cccc); border-color: var(--color-neon-cyan); box-shadow: 0 0 20px rgba(0,255,255,0.5); }
+        .toggle input:checked + .toggle-slider::before { transform: translateY(-50%) translateX(28px); background: linear-gradient(135deg, #0a0a0f, #1a1a2e); }
+
+        .progress-bar { margin: 15px 0; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: var(--color-text-secondary); }
+        .progress-track { height: 12px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid #333; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 10px; position: relative; transition: width 1s var(--ease-bounce); }
+        .progress-fill.cyan { background: linear-gradient(90deg, var(--color-neon-cyan), #00cccc); box-shadow: 0 0 15px rgba(0,255,255,0.5); }
+        .progress-fill.magenta { background: linear-gradient(90deg, var(--color-neon-magenta), #cc00cc); box-shadow: 0 0 15px rgba(255,0,255,0.5); }
+        .progress-fill.lime { background: linear-gradient(90deg, var(--color-neon-lime), #00cc00); box-shadow: 0 0 15px rgba(0,255,0,0.5); }
+        .progress-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shine 2s infinite; }
+        @keyframes shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin: 15px 0; }
+        .stat-box { background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1)); border: 1px solid rgba(0,255,255,0.3); border-radius: 10px; padding: 12px; text-align: center; transition: all 0.3s var(--ease-bounce); }
+        .stat-box:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 10px 30px rgba(0,255,255,0.3); }
+        .stat-value { font-size: 20px; font-weight: bold; background: linear-gradient(90deg, var(--color-neon-cyan), var(--color-neon-magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { color: #aaa; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        .content-title { color: var(--color-neon-cyan); font-size: 16px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        .content-text { color: var(--color-text-primary); font-size: 13px; line-height: 1.6; margin-bottom: 15px; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--color-bg-elevated); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-bg-hover); }
+
+        @media (max-width: 768px) {
+            .main-content { padding: 60px 20px 100px; }
+            .tabs-l2 { flex-direction: column; }
+            .tabs-l2-nav { width: 100%; flex-direction: row; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main-content" id="mainContent">
+        <div class="header">
+            <h1>RIDICULOUS DRAWERS</h1>
+            <p style="color: var(--color-text-secondary);">The Most Over-Engineered UI Ever Created</p>
+            <div class="badges">
+                <span class="badge">Click edge handles for panels</span>
+                <span class="badge">Alt+Arrows = Toggle</span>
+                <span class="badge">ESC = Close all</span>
+                <span class="badge">Type "chaos" in console</span>
+            </div>
+        </div>
+
+        <!-- DRAWER INCEPTION -->
+        <section class="inception-zone">
+            <h2 class="inception-title">DRAWER INCEPTION</h2>
+            <p style="text-align: center; color: var(--color-text-primary); margin-bottom: 20px; position: relative; z-index: 1;">Go deeper. Each drawer reveals another dimension.</p>
+            <div class="inception-content">
+                <div class="drawer level-1">
+                    <button class="drawer-trigger" data-drawer="d1">LEVEL 1: The Surface</button>
+                    <div class="drawer-panel" id="d1">
+                        <div class="drawer-inner">
+                            <p style="color: var(--color-neon-cyan); margin-bottom: 15px;">You've entered the first layer. But this is just the beginning...</p>
+                            <div class="drawer level-2">
+                                <button class="drawer-trigger" data-drawer="d2">LEVEL 2: Going Deeper</button>
+                                <div class="drawer-panel" id="d2">
+                                    <div class="drawer-inner">
+                                        <p style="color: var(--color-neon-magenta); margin-bottom: 15px;">The rabbit hole deepens. Reality begins to blur...</p>
+                                        <div class="drawer level-3">
+                                            <button class="drawer-trigger" data-drawer="d3">LEVEL 3: Limbo</button>
+                                            <div class="drawer-panel" id="d3">
+                                                <div class="drawer-inner">
+                                                    <p style="color: var(--color-neon-lime); margin-bottom: 15px;">You've reached Limbo. Here lie the collapsible secrets...</p>
+                                                    <div class="collapse">
+                                                        <div class="collapse-header" data-collapse="c1"><span>Secret Chamber Alpha</span><div class="collapse-icon"></div></div>
+                                                        <div class="collapse-body" id="c1"><div class="collapse-content">
+                                                            <p>In the depths of Limbo, time moves differently.</p>
+                                                            <div class="collapse nested">
+                                                                <div class="collapse-header" data-collapse="c1a"><span>Hidden Subsection</span><div class="collapse-icon"></div></div>
+                                                                <div class="collapse-body" id="c1a"><div class="collapse-content"><p style="color: var(--color-neon-magenta);">You found the hidden subsection!</p></div></div>
+                                                            </div>
+                                                        </div></div>
+                                                    </div>
+                                                    <div class="collapse">
+                                                        <div class="collapse-header" data-collapse="c2"><span>Secret Chamber Beta</span><div class="collapse-icon"></div></div>
+                                                        <div class="collapse-body" id="c2"><div class="collapse-content">
+                                                            <p>Strange artifacts and stranger memories...</p>
+                                                            <div class="collapse nested">
+                                                                <div class="collapse-header" data-collapse="c2a"><span>Artifact Repository</span><div class="collapse-icon"></div></div>
+                                                                <div class="collapse-body" id="c2a"><div class="collapse-content">
+                                                                    <p style="color: var(--color-neon-lime);">Ancient code fragments whisper secrets...</p>
+                                                                    <div class="collapse nested">
+                                                                        <div class="collapse-header" data-collapse="c2b"><span>THE CORE</span><div class="collapse-icon"></div></div>
+                                                                        <div class="collapse-body" id="c2b"><div class="collapse-content"><p style="color: var(--color-neon-cyan); font-weight: bold;">YOU FOUND THE CORE! Maximum nesting achieved!</p></div></div>
+                                                                    </div>
+                                                                </div></div>
+                                                            </div>
+                                                        </div></div>
+                                                    </div>
+                                                    <div class="drawer level-4" style="margin-top: 20px;">
+                                                        <button class="drawer-trigger" data-drawer="d4">LEVEL 4: The Void</button>
+                                                        <div class="drawer-panel" id="d4">
+                                                            <div class="drawer-inner">
+                                                                <p style="color: var(--color-neon-cyan); text-align: center; font-size: 18px;">
+                                                                    You have transcended all layers.<br>
+                                                                    <span style="color: var(--color-neon-magenta);">There is only the void now.</span><br>
+                                                                    <span style="color: var(--color-neon-lime);">And the void stares back.</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB INCEPTION ZONE -->
+        <div class="tab-zone">
+            <div class="depth-badge">DEPTH: 4 LEVELS</div>
+            <div class="tabs-l1">
+                <div class="tabs-l1-nav">
+                    <button class="tab-l1 active" data-tab="quantum">Quantum</button>
+                    <button class="tab-l1" data-tab="neural">Neural</button>
+                    <button class="tab-l1" data-tab="cyber">Cyber</button>
+                    <button class="tab-l1" data-tab="void">Void</button>
+                </div>
+                <div class="tabs-l1-content">
+                    <div class="tab-l1-panel active" id="quantum">
+                        <div class="tabs-l2">
+                            <div class="tabs-l2-nav">
+                                <button class="tab-l2 active" data-tab="alpha">Alpha</button>
+                                <button class="tab-l2" data-tab="beta">Beta</button>
+                                <button class="tab-l2" data-tab="gamma">Gamma</button>
+                            </div>
+                            <div class="tabs-l2-content">
+                                <div class="tab-l2-panel active" id="alpha">
+                                    <div class="tabs-l3">
+                                        <div class="tabs-l3-nav">
+                                            <button class="tab-l3 active" data-tab="particles">Particles</button>
+                                            <button class="tab-l3" data-tab="waves">Waves</button>
+                                            <button class="tab-l3" data-tab="fields">Fields</button>
+                                        </div>
+                                        <div class="tabs-l3-content">
+                                            <div class="tab-l3-panel active" id="particles">
+                                                <div class="tabs-l4">
+                                                    <div class="tabs-l4-nav">
+                                                        <button class="tab-l4 active" data-tab="quarks">Quarks</button>
+                                                        <button class="tab-l4" data-tab="leptons">Leptons</button>
+                                                        <button class="tab-l4" data-tab="bosons">Bosons</button>
+                                                    </div>
+                                                    <div class="tabs-l4-content">
+                                                        <div class="tab-l4-panel active" id="quarks">
+                                                            <div class="content-title">Quark Entanglement</div>
+                                                            <div class="toggle-row"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span>Spin Sync</span></div>
+                                                            <div class="progress-bar"><div class="progress-label"><span>Coherence</span><span>87%</span></div><div class="progress-track"><div class="progress-fill cyan" style="width: 87%"></div></div></div>
+                                                        </div>
+                                                        <div class="tab-l4-panel" id="leptons">
+                                                            <div class="content-title">Lepton Config</div>
+                                                            <div class="stats-grid"><div class="stat-box"><div class="stat-value">12</div><div class="stat-label">Electrons</div></div><div class="stat-box"><div class="stat-value">6</div><div class="stat-label">Muons</div></div></div>
+                                                        </div>
+                                                        <div class="tab-l4-panel" id="bosons">
+                                                            <div class="content-title">Boson Exchange</div>
+                                                            <div class="stats-grid"><div class="stat-box"><div class="stat-value">42</div><div class="stat-label">Photons/s</div></div><div class="stat-box"><div class="stat-value">8</div><div class="stat-label">Gluons</div></div></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="tab-l3-panel" id="waves">
+                                                <div class="content-title">Wave Functions</div>
+                                                <div class="progress-bar"><div class="progress-label"><span>Amplitude</span><span>65%</span></div><div class="progress-track"><div class="progress-fill magenta" style="width: 65%"></div></div></div>
+                                            </div>
+                                            <div class="tab-l3-panel" id="fields">
+                                                <div class="content-title">Field Strength</div>
+                                                <div class="toggle-row"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span>EM Field Active</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-l2-panel" id="beta">
+                                    <div class="content-title">Beta Flux Processing</div>
+                                    <div class="progress-bar"><div class="progress-label"><span>Stage 1</span><span>100%</span></div><div class="progress-track"><div class="progress-fill cyan" style="width: 100%"></div></div></div>
+                                    <div class="progress-bar"><div class="progress-label"><span>Stage 2</span><span>78%</span></div><div class="progress-track"><div class="progress-fill magenta" style="width: 78%"></div></div></div>
+                                </div>
+                                <div class="tab-l2-panel" id="gamma">
+                                    <div class="content-title">Gamma Core Reactor</div>
+                                    <div class="toggle-row"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span>Core Online</span></div>
+                                    <div class="stats-grid"><div class="stat-box"><div class="stat-value">99.8%</div><div class="stat-label">Efficiency</div></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-l1-panel" id="neural">
+                        <div class="tabs-l2">
+                            <div class="tabs-l2-nav">
+                                <button class="tab-l2 active" data-tab="cortex">Cortex</button>
+                                <button class="tab-l2" data-tab="synapse">Synapse</button>
+                            </div>
+                            <div class="tabs-l2-content">
+                                <div class="tab-l2-panel active" id="cortex">
+                                    <div class="content-title">Visual Processing</div>
+                                    <div class="stats-grid"><div class="stat-box"><div class="stat-value">60</div><div class="stat-label">FPS</div></div><div class="stat-box"><div class="stat-value">4K</div><div class="stat-label">Res</div></div></div>
+                                </div>
+                                <div class="tab-l2-panel" id="synapse">
+                                    <div class="content-title">Synaptic Connections</div>
+                                    <div class="progress-bar"><div class="progress-label"><span>Strength</span><span>91%</span></div><div class="progress-track"><div class="progress-fill lime" style="width: 91%"></div></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-l1-panel" id="cyber">
+                        <div class="content-title">Firewall Status</div>
+                        <div class="stats-grid">
+                            <div class="stat-box"><div class="stat-value">247</div><div class="stat-label">Blocked</div></div>
+                            <div class="stat-box"><div class="stat-value">52</div><div class="stat-label">Allowed</div></div>
+                        </div>
+                        <div class="toggle-row"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span>AES-256 Encryption</span></div>
+                    </div>
+                    <div class="tab-l1-panel" id="void">
+                        <div class="content-title" style="color: var(--color-neon-magenta);">SINGULARITY</div>
+                        <div class="content-text" style="color: var(--color-neon-magenta);">WARNING: Approaching infinite density. Spacetime undefined.</div>
+                        <div class="progress-bar"><div class="progress-label"><span>Event Horizon</span><span>99.9%</span></div><div class="progress-track"><div class="progress-fill magenta" style="width: 99.9%"></div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- TOP PANEL -->
+    <aside class="edge-panel edge-panel--top" id="panelTop" data-state="closed">
+        <div class="panel-content">
+            <h3 style="color: var(--color-neon-cyan); margin-bottom: 15px;">Quick Settings</h3>
+            <div class="settings-grid">
+                <div class="setting-card active" data-setting="wifi"><div class="setting-icon">📶</div><div class="setting-label">WiFi</div></div>
+                <div class="setting-card" data-setting="bluetooth"><div class="setting-icon">🔵</div><div class="setting-label">Bluetooth</div></div>
+                <div class="setting-card active" data-setting="darkmode"><div class="setting-icon">🌙</div><div class="setting-label">Dark</div></div>
+                <div class="setting-card" data-setting="airplane"><div class="setting-icon">✈️</div><div class="setting-label">Airplane</div></div>
+                <div class="setting-card" data-setting="hotspot"><div class="setting-icon">📡</div><div class="setting-label">Hotspot</div></div>
+                <div class="setting-card active" data-setting="alerts"><div class="setting-icon">🔔</div><div class="setting-label">Alerts</div></div>
+                <div class="setting-card" data-setting="location"><div class="setting-icon">📍</div><div class="setting-label">Location</div></div>
+                <div class="setting-card" data-setting="sync"><div class="setting-icon">🔄</div><div class="setting-label">Sync</div></div>
+            </div>
+        </div>
+        <button class="panel-handle" data-handle="top"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-neon-cyan)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+    </aside>
+
+    <!-- BOTTOM PANEL -->
+    <aside class="edge-panel edge-panel--bottom" id="panelBottom" data-state="closed">
+        <button class="panel-handle" data-handle="bottom"></button>
+        <div class="panel-content">
+            <div class="console-box">
+                <div class="console-header"><span class="console-dot red"></span><span class="console-dot yellow"></span><span class="console-dot green"></span><span style="flex:1; text-align:center; font-size:12px; color:var(--color-text-muted); font-family:monospace;">ridiculous-console v1.0</span></div>
+                <div class="console-output" id="consoleOutput">
+                    <div class="console-line">System initialized...</div>
+                    <div class="console-line">Loading ridiculous modules...</div>
+                    <div class="console-line">Edge panels: ONLINE</div>
+                    <div class="console-line">Bounce physics: ENABLED</div>
+                    <div class="console-line">Ready for absurdity.</div>
+                </div>
+                <div class="console-input-wrap"><span style="color: var(--color-neon-cyan); margin-right: 8px; font-family: monospace;">$</span><input type="text" class="console-input" id="consoleInput" placeholder="Type a command..." autocomplete="off"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- LEFT PANEL -->
+    <aside class="edge-panel edge-panel--left" id="panelLeft" data-state="closed">
+        <div class="panel-content">
+            <nav class="nav-section">
+                <div class="nav-title">Main</div>
+                <div class="nav-item active" data-nav="dashboard"><span>🏠</span><span>Dashboard</span></div>
+                <div class="nav-item" data-nav="projects"><span>📁</span><span>Projects</span><span class="nav-badge">12</span></div>
+                <div class="nav-item" data-nav="tasks"><span>✅</span><span>Tasks</span><span class="nav-badge">5</span></div>
+                <div class="nav-item" data-nav="calendar"><span>📅</span><span>Calendar</span></div>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-title">Tools</div>
+                <div class="nav-item" data-nav="analytics"><span>📊</span><span>Analytics</span></div>
+                <div class="nav-item" data-nav="reports"><span>📈</span><span>Reports</span></div>
+                <div class="nav-item" data-nav="integrations"><span>🔗</span><span>Integrations</span></div>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-title">Account</div>
+                <div class="nav-item" data-nav="profile"><span>👤</span><span>Profile</span></div>
+                <div class="nav-item" data-nav="settings"><span>⚙️</span><span>Settings</span></div>
+                <div class="nav-item" data-nav="help"><span>❓</span><span>Help</span></div>
+            </nav>
+        </div>
+        <button class="panel-handle" data-handle="left"></button>
+    </aside>
+
+    <!-- RIGHT PANEL -->
+    <aside class="edge-panel edge-panel--right" id="panelRight" data-state="closed">
+        <button class="panel-handle" data-handle="right">TOOLS</button>
+        <div class="panel-content">
+            <h3 style="color: var(--color-neon-orange); margin-bottom: 15px;">Tool Palette</h3>
+            <div class="tool-title">Selection</div>
+            <div class="tool-grid">
+                <div class="tool-item selected" data-tool="pointer">👆</div>
+                <div class="tool-item" data-tool="select">⬚</div>
+                <div class="tool-item" data-tool="lasso">〰️</div>
+                <div class="tool-item" data-tool="magic">✨</div>
+            </div>
+            <div class="tool-title">Drawing</div>
+            <div class="tool-grid">
+                <div class="tool-item" data-tool="pen">🖊️</div>
+                <div class="tool-item" data-tool="brush">🖌️</div>
+                <div class="tool-item" data-tool="eraser">🧹</div>
+                <div class="tool-item" data-tool="fill">🪣</div>
+            </div>
+            <div class="tool-title">Shapes</div>
+            <div class="tool-grid">
+                <div class="tool-item" data-tool="rect">⬜</div>
+                <div class="tool-item" data-tool="circle">⚪</div>
+                <div class="tool-item" data-tool="line">📏</div>
+                <div class="tool-item" data-tool="polygon">⬡</div>
+            </div>
+        </div>
+    </aside>
+
+    <script src="script.js"></script>
+</body>
+</html>

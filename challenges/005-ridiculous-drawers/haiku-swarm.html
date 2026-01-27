@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ridiculously Over-Engineered Drawers Page</title>
+    <style>
+/* ============================================================================
+   ABSURDLY OVER-ENGINEERED DARK THEME CSS
+   Dark-themed page with elastic/bouncy animations, responsive grids,
+   and smooth transitions for all interactive elements
+   ============================================================================ */
+
+/* ============================================================================
+   ROOT & THEME VARIABLES
+   ============================================================================ */
+:root {
+  /* Dark theme colors */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #121829;
+  --bg-tertiary: #1a1f3a;
+  --bg-hover: #242d4d;
+
+  /* Text colors */
+  --text-primary: #e8eef5;
+  --text-secondary: #a8b2c1;
+  --text-tertiary: #7a8294;
+
+  /* Accent colors (neon optional) */
+  --accent-primary: #00d9ff;
+  --accent-secondary: #ff006e;
+  --accent-tertiary: #8338ec;
+  --accent-warning: #ffbe0b;
+
+  /* Borders and dividers */
+  --border-color: #2a3354;
+  --border-subtle: #1e243a;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(0, 217, 255, 0.2);
+
+  /* Animation timings */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-xslow: 800ms;
+
+  /* Easing functions */
+  --ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1.0);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ============================================================================
+   GLOBAL STYLES & RESET
+   ============================================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  overflow-x: hidden;
+}
+
+/* ============================================================================
+   ELASTIC KEYFRAMES - BOUNCY ANIMATIONS
+   ============================================================================ */
+
+/* Elastic entrance from left */
+@keyframes slideInElasticLeft {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Elastic entrance from right */
+@keyframes slideInElasticRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-10px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Elastic entrance from top */
+@keyframes slideInElasticTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(10px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Elastic entrance from bottom */
+@keyframes slideInElasticBottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(5px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Elastic exit to left */
+@keyframes slideOutElasticLeft {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+/* Elastic exit to right */
+@keyframes slideOutElasticRight {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: translateX(5px);
+  }
+  40% {
+    transform: translateX(-10px);
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Bounce scale entrance */
+@keyframes bounceScaleIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Bounce scale exit */
+@keyframes bounceScaleOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Springy expand */
+@keyframes springExpand {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scaleY(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: scaleY(0.95);
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Springy collapse */
+@keyframes springCollapse {
+  0% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  20% {
+    transform: scaleY(1.05);
+  }
+  100% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+/* Elastic rotate entrance */
+@keyframes rotateElasticIn {
+  0% {
+    transform: rotate(-20deg) scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(5deg) scale(1.05);
+    opacity: 1;
+  }
+  80% {
+    transform: rotate(-2deg) scale(0.98);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Drawer slide bounce */
+@keyframes drawerBounce {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Tab slide with bounce */
+@keyframes tabSlideElastic {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Glow pulse */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.2), inset 0 0 10px rgba(0, 217, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4), inset 0 0 15px rgba(0, 217, 255, 0.2);
+  }
+}
+
+/* ============================================================================
+   CONTAINER & LAYOUT BASE STYLES
+   ============================================================================ */
+
+.container {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+
+.tab-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+  border-color: var(--accent-primary);
+  color: var(--bg-primary);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+}
+
+.tab-btn.small {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+.tab-btn.micro {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.control-btn, .slide-toggle {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all var(--duration-fast) var(--ease-in-out);
+}
+
+.control-btn:hover, .slide-toggle:hover {
+  background-color: var(--accent-primary);
+  color: var(--bg-primary);
+  transform: scale(1.05);
+}
+
+/* ============================================================================
+   LAYOUT STRUCTURE STYLES
+   ============================================================================ */
+
+.top-panel {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 24px;
+  box-shadow: var(--shadow-md);
+  z-index: 80;
+  animation: slideInElasticTop var(--duration-normal) var(--ease-elastic);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.panel-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tab-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-content {
+  display: none;
+  padding: 12px 0;
+  animation: slideInElasticTop var(--duration-normal) var(--ease-elastic);
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.main-container {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  gap: 0;
+}
+
+.left-sidebar, .right-sidebar {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  width: 280px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.left-sidebar {
+  border-right: 1px solid var(--border-color);
+  animation: slideInElasticLeft var(--duration-normal) var(--ease-elastic);
+}
+
+.right-sidebar {
+  border-left: 1px solid var(--border-color);
+  animation: slideInElasticRight var(--duration-normal) var(--ease-elastic);
+}
+
+.sidebar-header {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.center-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background-color: var(--bg-primary);
+}
+
+.content-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+}
+
+.content-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 20px 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.grid-item {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: bounceScaleIn var(--duration-normal) var(--ease-elastic);
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.grid-item:hover {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.item-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.item-content {
+  flex: 1;
+  padding: 12px 16px;
+  overflow-y: auto;
+}
+
+.nested-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.section-header {
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  user-select: none;
+}
+
+.section-header:hover {
+  background-color: var(--bg-hover);
+  color: var(--accent-primary);
+}
+
+.toggle-icon {
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-in-out);
+}
+
+.section-header.open .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.section-content {
+  display: none;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin-bottom: 8px;
+}
+
+.section-content.open {
+  display: block;
+  animation: springExpand var(--duration-normal) var(--ease-elastic);
+}
+
+.nested-collapsible {
+  margin-bottom: 8px;
+}
+
+.drawer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-header {
+  padding: 10px 12px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  user-select: none;
+}
+
+.drawer-header:hover {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+  box-shadow: inset 0 0 10px rgba(0, 217, 255, 0.1);
+  color: var(--accent-primary);
+}
+
+.drawer-toggle {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-in-out);
+}
+
+.drawer-toggle:hover {
+  transform: rotate(10deg) scale(1.15);
+}
+
+.drawer-content {
+  display: none;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin-bottom: 8px;
+}
+
+.drawer-content.open {
+  display: block;
+  animation: springExpand var(--duration-normal) var(--ease-elastic);
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accordion-item {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bg-tertiary);
+}
+
+.accordion-header {
+  padding: 10px 12px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.accordion-header:hover {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+  color: var(--accent-primary);
+}
+
+.accordion-title {
+  flex: 1;
+}
+
+.accordion-content {
+  display: none;
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+}
+
+.accordion-content.open {
+  display: block;
+  animation: springExpand var(--duration-normal) var(--ease-elastic);
+}
+
+.sliding-panel {
+  display: none;
+  position: absolute;
+  right: -350px;
+  top: 0;
+  width: 350px;
+  height: 100%;
+  background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  transition: right var(--duration-slow) var(--ease-elastic);
+  overflow-y: auto;
+}
+
+.sliding-panel.open {
+  right: 0;
+  animation: slideInElasticRight var(--duration-slow) var(--ease-elastic);
+}
+
+.panel-body {
+  padding: 16px;
+}
+
+.bottom-panel {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 16px 24px;
+  box-shadow: var(--shadow-md);
+  z-index: 80;
+  animation: slideInElasticBottom var(--duration-normal) var(--ease-elastic);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.bottom-panel .tab-content {
+  padding: 8px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLES
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+  transition: background var(--duration-fast) var(--ease-in-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+  .left-sidebar, .right-sidebar {
+    width: 200px;
+  }
+
+  .content-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+  }
+
+  .left-sidebar, .right-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+  }
+
+  .left-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .right-sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-panel {
+    max-height: 250px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+    </style>
+</head>
+<body>
+    <!-- TOP SLIDING PANEL WITH TABS AND NESTED DRAWERS -->
+    <div class="top-panel" data-panel="top-main">
+        <div class="panel-header">
+            <h2>Top Control Center</h2>
+            <div class="tab-container" data-tab-group="top-tabs">
+                <button class="tab-btn active" data-tab="top-config">Configuration</button>
+                <button class="tab-btn" data-tab="top-status">Status Monitor</button>
+                <button class="tab-btn" data-tab="top-advanced">Advanced Settings</button>
+                <button class="tab-btn" data-tab="top-debug">Debug Console</button>
+            </div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div class="tab-content active" data-tab-content="top-config">
+            <div class="drawer-group" data-drawer-parent="top-config">
+                <div class="drawer-header" data-drawer="main-settings">
+                    <span class="drawer-toggle">Main Settings</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="main-settings">
+                    <div class="nested-tabs" data-tab-group="main-settings-tabs">
+                        <button class="tab-btn small" data-tab="general">General</button>
+                        <button class="tab-btn small" data-tab="display">Display</button>
+                        <button class="tab-btn small" data-tab="performance">Performance</button>
+                    </div>
+                    <div class="tab-content active" data-tab-content="general">
+                        <p>General settings panel</p>
+                    </div>
+                    <div class="tab-content" data-tab-content="display">
+                        <p>Display settings</p>
+                    </div>
+                    <div class="tab-content" data-tab-content="performance">
+                        <p>Performance tuning</p>
+                    </div>
+                </div>
+
+                <div class="drawer-header" data-drawer="system-config">
+                    <span class="drawer-toggle">System Configuration</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="system-config">
+                    <div class="nested-drawer-group">
+                        <div class="drawer-header" data-drawer="subsystem-1">
+                            <span class="drawer-toggle">Subsystem 1</span>
+                        </div>
+                        <div class="drawer-content" data-drawer-content="subsystem-1">
+                            <p>Subsystem 1 content</p>
+                        </div>
+                        <div class="drawer-header" data-drawer="subsystem-2">
+                            <span class="drawer-toggle">Subsystem 2</span>
+                        </div>
+                        <div class="drawer-content" data-drawer-content="subsystem-2">
+                            <p>Subsystem 2 content</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="drawer-header" data-drawer="network-settings">
+                    <span class="drawer-toggle">Network Settings</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="network-settings">
+                    <div class="nested-tabs" data-tab-group="network-tabs">
+                        <button class="tab-btn small" data-tab="connections">Connections</button>
+                        <button class="tab-btn small" data-tab="protocols">Protocols</button>
+                        <button class="tab-btn small" data-tab="security">Security</button>
+                        <button class="tab-btn small" data-tab="routing">Routing</button>
+                    </div>
+                    <div class="tab-content active" data-tab-content="connections">Connections</div>
+                    <div class="tab-content" data-tab-content="protocols">Protocols</div>
+                    <div class="tab-content" data-tab-content="security">Security</div>
+                    <div class="tab-content" data-tab-content="routing">Routing</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Monitor Tab -->
+        <div class="tab-content" data-tab-content="top-status">
+            <div class="drawer-group" data-drawer-parent="top-status">
+                <div class="drawer-header" data-drawer="cpu-status">
+                    <span class="drawer-toggle">CPU Status</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="cpu-status">
+                    <p>CPU information and metrics</p>
+                </div>
+                <div class="drawer-header" data-drawer="memory-status">
+                    <span class="drawer-toggle">Memory Status</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="memory-status">
+                    <p>Memory information and metrics</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Settings Tab -->
+        <div class="tab-content" data-tab-content="top-advanced">
+            <div class="nested-tabs" data-tab-group="advanced-tabs">
+                <button class="tab-btn small" data-tab="adv-networking">Networking</button>
+                <button class="tab-btn small" data-tab="adv-storage">Storage</button>
+                <button class="tab-btn small" data-tab="adv-compute">Compute</button>
+                <button class="tab-btn small" data-tab="adv-monitoring">Monitoring</button>
+                <button class="tab-btn small" data-tab="adv-logging">Logging</button>
+            </div>
+            <div class="tab-content active" data-tab-content="adv-networking">Advanced networking options</div>
+            <div class="tab-content" data-tab-content="adv-storage">Advanced storage options</div>
+            <div class="tab-content" data-tab-content="adv-compute">Advanced compute options</div>
+            <div class="tab-content" data-tab-content="adv-monitoring">Advanced monitoring options</div>
+            <div class="tab-content" data-tab-content="adv-logging">Advanced logging options</div>
+        </div>
+
+        <!-- Debug Console Tab -->
+        <div class="tab-content" data-tab-content="top-debug">
+            <div class="nested-tabs" data-tab-group="debug-tabs">
+                <button class="tab-btn small" data-tab="debug-logs">Logs</button>
+                <button class="tab-btn small" data-tab="debug-trace">Trace</button>
+                <button class="tab-btn small" data-tab="debug-breakpoints">Breakpoints</button>
+            </div>
+            <div class="tab-content active" data-tab-content="debug-logs">Debug logs</div>
+            <div class="tab-content" data-tab-content="debug-trace">Execution trace</div>
+            <div class="tab-content" data-tab-content="debug-breakpoints">Breakpoints</div>
+        </div>
+    </div>
+
+    <!-- MAIN LAYOUT CONTAINER -->
+    <div class="main-container">
+        <!-- LEFT ELASTIC SIDEBAR -->
+        <aside class="left-sidebar" data-panel="left-sidebar">
+            <div class="sidebar-header">
+                <h3>Left Navigation</h3>
+            </div>
+
+            <div class="collapsible-section" data-drawer="left-section-1">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Navigation Root</span>
+                </div>
+                <div class="section-content" data-drawer-content="left-section-1">
+                    <div class="nested-tabs" data-tab-group="left-nav-tabs">
+                        <button class="tab-btn micro" data-tab="nav-tree">Tree View</button>
+                        <button class="tab-btn micro" data-tab="nav-list">List View</button>
+                        <button class="tab-btn micro" data-tab="nav-grid">Grid View</button>
+                    </div>
+                    <div class="tab-content active" data-tab-content="nav-tree">
+                        <div class="nested-collapsible" data-drawer="left-subsection-1a">
+                            <div class="section-header" data-drawer-toggle>
+                                <span class="toggle-icon">▼</span>
+                                <span>Category A</span>
+                            </div>
+                            <div class="section-content" data-drawer-content="left-subsection-1a">
+                                <div class="nested-tabs" data-tab-group="cat-a-tabs">
+                                    <button class="tab-btn micro" data-tab="cat-a-items">Items</button>
+                                    <button class="tab-btn micro" data-tab="cat-a-settings">Settings</button>
+                                </div>
+                                <div class="tab-content active" data-tab-content="cat-a-items">Item list for Category A</div>
+                                <div class="tab-content" data-tab-content="cat-a-settings">Settings for Category A</div>
+                            </div>
+                        </div>
+                        <div class="nested-collapsible" data-drawer="left-subsection-1b">
+                            <div class="section-header" data-drawer-toggle>
+                                <span class="toggle-icon">▼</span>
+                                <span>Category B</span>
+                            </div>
+                            <div class="section-content" data-drawer-content="left-subsection-1b">
+                                <div class="nested-tabs" data-tab-group="cat-b-tabs">
+                                    <button class="tab-btn micro" data-tab="cat-b-items">Items</button>
+                                    <button class="tab-btn micro" data-tab="cat-b-settings">Settings</button>
+                                </div>
+                                <div class="tab-content active" data-tab-content="cat-b-items">Item list for Category B</div>
+                                <div class="tab-content" data-tab-content="cat-b-settings">Settings for Category B</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" data-tab-content="nav-list">List view content</div>
+                    <div class="tab-content" data-tab-content="nav-grid">Grid view content</div>
+                </div>
+            </div>
+
+            <div class="collapsible-section" data-drawer="left-section-2">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Utilities</span>
+                </div>
+                <div class="section-content" data-drawer-content="left-section-2">
+                    <div class="nested-tabs" data-tab-group="util-tabs">
+                        <button class="tab-btn micro" data-tab="util-tools">Tools</button>
+                        <button class="tab-btn micro" data-tab="util-plugins">Plugins</button>
+                        <button class="tab-btn micro" data-tab="util-extensions">Extensions</button>
+                    </div>
+                    <div class="tab-content active" data-tab-content="util-tools">Tools content</div>
+                    <div class="tab-content" data-tab-content="util-plugins">Plugins content</div>
+                    <div class="tab-content" data-tab-content="util-extensions">Extensions content</div>
+                </div>
+            </div>
+
+            <div class="collapsible-section" data-drawer="left-section-3">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Advanced Options</span>
+                </div>
+                <div class="section-content" data-drawer-content="left-section-3">
+                    <div class="nested-collapsible" data-drawer="left-subsection-3a">
+                        <div class="section-header" data-drawer-toggle>
+                            <span class="toggle-icon">▼</span>
+                            <span>Experimental</span>
+                        </div>
+                        <div class="section-content" data-drawer-content="left-subsection-3a">
+                            <div class="nested-tabs" data-tab-group="exp-tabs">
+                                <button class="tab-btn micro" data-tab="exp-alpha">Alpha</button>
+                                <button class="tab-btn micro" data-tab="exp-beta">Beta</button>
+                            </div>
+                            <div class="tab-content active" data-tab-content="exp-alpha">Alpha features</div>
+                            <div class="tab-content" data-tab-content="exp-beta">Beta features</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER AREA WITH MAIN CONTENT GRID -->
+        <main class="center-content" data-panel="center-main">
+            <div class="content-header">
+                <h1>Main Content Area - Ridiculous Drawer Chaos</h1>
+                <div class="header-controls">
+                    <button class="control-btn">Layout: Grid</button>
+                    <button class="control-btn">Options</button>
+                </div>
+            </div>
+
+            <!-- Grid with Sliding Panels -->
+            <div class="content-grid" data-panel="grid-container">
+                <!-- Grid Item 1 with Sliding Panel -->
+                <div class="grid-item" data-grid-item="1">
+                    <div class="item-header">
+                        <h3>Panel 1: Data Viewer</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-1-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="nested-tabs" data-tab-group="item-1-tabs">
+                            <button class="tab-btn small" data-tab="item-1-table">Table</button>
+                            <button class="tab-btn small" data-tab="item-1-chart">Chart</button>
+                            <button class="tab-btn small" data-tab="item-1-export">Export</button>
+                        </div>
+                        <div class="tab-content active" data-tab-content="item-1-table">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr><th style="padding: 8px; border: 1px solid var(--border-color);">Column 1</th><th style="padding: 8px; border: 1px solid var(--border-color);">Column 2</th></tr>
+                                <tr><td style="padding: 8px; border: 1px solid var(--border-color);">Data 1</td><td style="padding: 8px; border: 1px solid var(--border-color);">Data 2</td></tr>
+                            </table>
+                        </div>
+                        <div class="tab-content" data-tab-content="item-1-chart">Chart visualization</div>
+                        <div class="tab-content" data-tab-content="item-1-export">Export options</div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-1-slide" data-panel="panel-1-slide">
+                        <div class="panel-body">
+                            <div class="nested-drawer-group" data-drawer-parent="panel-1-drawers">
+                                <div class="drawer-header" data-drawer="slide-drawer-1a">
+                                    <span class="drawer-toggle">Drawer 1A</span>
+                                </div>
+                                <div class="drawer-content" data-drawer-content="slide-drawer-1a">Drawer 1A content</div>
+                                <div class="drawer-header" data-drawer="slide-drawer-1b">
+                                    <span class="drawer-toggle">Drawer 1B</span>
+                                </div>
+                                <div class="drawer-content" data-drawer-content="slide-drawer-1b">Drawer 1B content</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Item 2 with Sliding Panel -->
+                <div class="grid-item" data-grid-item="2">
+                    <div class="item-header">
+                        <h3>Panel 2: Configuration Editor</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-2-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="nested-tabs" data-tab-group="item-2-tabs">
+                            <button class="tab-btn small" data-tab="item-2-editor">Editor</button>
+                            <button class="tab-btn small" data-tab="item-2-preview">Preview</button>
+                            <button class="tab-btn small" data-tab="item-2-validate">Validate</button>
+                        </div>
+                        <div class="tab-content active" data-tab-content="item-2-editor">Configuration editor</div>
+                        <div class="tab-content" data-tab-content="item-2-preview">Configuration preview</div>
+                        <div class="tab-content" data-tab-content="item-2-validate">Configuration validation</div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-2-slide" data-panel="panel-2-slide">
+                        <div class="panel-body">
+                            <div class="nested-collapsible" data-drawer="slide-section-2a">
+                                <div class="section-header" data-drawer-toggle>
+                                    <span class="toggle-icon">▼</span>
+                                    <span>Advanced Settings</span>
+                                </div>
+                                <div class="section-content" data-drawer-content="slide-section-2a">Advanced content</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Item 3 with Collapsible Sections -->
+                <div class="grid-item" data-grid-item="3">
+                    <div class="item-header">
+                        <h3>Panel 3: Analysis Tools</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-3-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="nested-collapsible" data-drawer="item-3-collapse-1">
+                            <div class="section-header" data-drawer-toggle>
+                                <span class="toggle-icon">▼</span>
+                                <span>Analysis Methods</span>
+                            </div>
+                            <div class="section-content" data-drawer-content="item-3-collapse-1">
+                                <div class="nested-tabs" data-tab-group="analysis-methods">
+                                    <button class="tab-btn micro" data-tab="method-stat">Statistics</button>
+                                    <button class="tab-btn micro" data-tab="method-ml">Machine Learning</button>
+                                    <button class="tab-btn micro" data-tab="method-ai">AI Analysis</button>
+                                </div>
+                                <div class="tab-content active" data-tab-content="method-stat">Statistical analysis tools</div>
+                                <div class="tab-content" data-tab-content="method-ml">ML analysis tools</div>
+                                <div class="tab-content" data-tab-content="method-ai">AI analysis tools</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-3-slide" data-panel="panel-3-slide">
+                        <div class="panel-body">Analysis sliding panel content</div>
+                    </div>
+                </div>
+
+                <!-- Grid Item 4 with Accordion -->
+                <div class="grid-item" data-grid-item="4">
+                    <div class="item-header">
+                        <h3>Panel 4: Accordion Menu</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-4-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="accordion" data-accordion="main-accordion">
+                            <div class="accordion-item" data-accordion-item="item-1">
+                                <div class="accordion-header" data-accordion-toggle>
+                                    <span class="accordion-title">Section 1</span>
+                                </div>
+                                <div class="accordion-content" data-accordion-content="item-1">Section 1 content with nested tabs</div>
+                            </div>
+                            <div class="accordion-item" data-accordion-item="item-2">
+                                <div class="accordion-header" data-accordion-toggle>
+                                    <span class="accordion-title">Section 2</span>
+                                </div>
+                                <div class="accordion-content" data-accordion-content="item-2">Section 2 content</div>
+                            </div>
+                            <div class="accordion-item" data-accordion-item="item-3">
+                                <div class="accordion-header" data-accordion-toggle>
+                                    <span class="accordion-title">Section 3</span>
+                                </div>
+                                <div class="accordion-content" data-accordion-content="item-3">Section 3 content</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-4-slide" data-panel="panel-4-slide">
+                        <div class="panel-body">Slide accordion content</div>
+                    </div>
+                </div>
+
+                <!-- Grid Item 5 with Complex Nesting -->
+                <div class="grid-item" data-grid-item="5">
+                    <div class="item-header">
+                        <h3>Panel 5: Complex Hierarchy</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-5-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="nested-tabs" data-tab-group="item-5-main-tabs">
+                            <button class="tab-btn small" data-tab="item-5-tree">Tree</button>
+                            <button class="tab-btn small" data-tab="item-5-matrix">Matrix</button>
+                        </div>
+                        <div class="tab-content active" data-tab-content="item-5-tree">
+                            <div class="nested-collapsible" data-drawer="complex-node-1">
+                                <div class="section-header" data-drawer-toggle>
+                                    <span class="toggle-icon">▼</span>
+                                    <span>Root Node</span>
+                                </div>
+                                <div class="section-content" data-drawer-content="complex-node-1">
+                                    <div class="nested-collapsible" data-drawer="complex-node-1a">
+                                        <div class="section-header" data-drawer-toggle>
+                                            <span class="toggle-icon">▼</span>
+                                            <span>Child Node 1A</span>
+                                        </div>
+                                        <div class="section-content" data-drawer-content="complex-node-1a">Deep nested content</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-content" data-tab-content="item-5-matrix">Matrix view</div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-5-slide" data-panel="panel-5-slide">
+                        <div class="panel-body">Complex sliding panel content</div>
+                    </div>
+                </div>
+
+                <!-- Grid Item 6 with Multi-level Tabs -->
+                <div class="grid-item" data-grid-item="6">
+                    <div class="item-header">
+                        <h3>Panel 6: Tab Inception</h3>
+                        <button class="slide-toggle" data-slide-panel="panel-6-slide">Slide</button>
+                    </div>
+                    <div class="item-content">
+                        <div class="nested-tabs" data-tab-group="item-6-level1">
+                            <button class="tab-btn small" data-tab="item-6-l1-a">Level 1A</button>
+                            <button class="tab-btn small" data-tab="item-6-l1-b">Level 1B</button>
+                        </div>
+                        <div class="tab-content active" data-tab-content="item-6-l1-a">
+                            <div class="nested-tabs" data-tab-group="item-6-level2">
+                                <button class="tab-btn micro" data-tab="item-6-l2-1">Level 2.1</button>
+                                <button class="tab-btn micro" data-tab="item-6-l2-2">Level 2.2</button>
+                            </div>
+                            <div class="tab-content active" data-tab-content="item-6-l2-1">
+                                <div class="nested-tabs" data-tab-group="item-6-level3">
+                                    <button class="tab-btn micro" data-tab="item-6-l3-1">Level 3.1</button>
+                                    <button class="tab-btn micro" data-tab="item-6-l3-2">Level 3.2</button>
+                                </div>
+                                <div class="tab-content active" data-tab-content="item-6-l3-1">Three levels deep!</div>
+                                <div class="tab-content" data-tab-content="item-6-l3-2">Also three levels deep</div>
+                            </div>
+                            <div class="tab-content" data-tab-content="item-6-l2-2">Level 2.2 content</div>
+                        </div>
+                        <div class="tab-content" data-tab-content="item-6-l1-b">Level 1B content</div>
+                    </div>
+                    <div class="sliding-panel" data-slide-panel="panel-6-slide" data-panel="panel-6-slide">
+                        <div class="panel-body">Slide content for panel 6</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="right-sidebar" data-panel="right-sidebar">
+            <div class="sidebar-header">
+                <h3>Right Panel Hub</h3>
+            </div>
+
+            <div class="collapsible-section" data-drawer="right-section-1">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Inspector Panel</span>
+                </div>
+                <div class="section-content" data-drawer-content="right-section-1">
+                    <div class="nested-tabs" data-tab-group="inspector-tabs">
+                        <button class="tab-btn small" data-tab="insp-element">Element</button>
+                        <button class="tab-btn small" data-tab="insp-styles">Styles</button>
+                        <button class="tab-btn small" data-tab="insp-layout">Layout</button>
+                    </div>
+                    <div class="tab-content active" data-tab-content="insp-element">Element inspector</div>
+                    <div class="tab-content" data-tab-content="insp-styles">Styles inspector</div>
+                    <div class="tab-content" data-tab-content="insp-layout">Layout inspector</div>
+                </div>
+            </div>
+
+            <div class="collapsible-section" data-drawer="right-section-2">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Property Panels</span>
+                </div>
+                <div class="section-content" data-drawer-content="right-section-2">
+                    <div class="accordion" data-accordion="prop-accordion">
+                        <div class="accordion-item" data-accordion-item="prop-item-1">
+                            <div class="accordion-header" data-accordion-toggle>
+                                <span class="accordion-title">General Properties</span>
+                            </div>
+                            <div class="accordion-content" data-accordion-content="prop-item-1">Basic properties</div>
+                        </div>
+                        <div class="accordion-item" data-accordion-item="prop-item-2">
+                            <div class="accordion-header" data-accordion-toggle>
+                                <span class="accordion-title">Transform Properties</span>
+                            </div>
+                            <div class="accordion-content" data-accordion-content="prop-item-2">Transform properties content</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible-section" data-drawer="right-section-3">
+                <div class="section-header" data-drawer-toggle>
+                    <span class="toggle-icon">▼</span>
+                    <span class="section-title">Asset Library</span>
+                </div>
+                <div class="section-content" data-drawer-content="right-section-3">
+                    <div class="nested-collapsible" data-drawer="asset-category-1">
+                        <div class="section-header" data-drawer-toggle>
+                            <span class="toggle-icon">▼</span>
+                            <span>Images</span>
+                        </div>
+                        <div class="section-content" data-drawer-content="asset-category-1">All images category</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- BOTTOM PANEL WITH MULTIPLE NESTED TABS -->
+    <div class="bottom-panel" data-panel="bottom-main">
+        <div class="panel-header">
+            <h2>Bottom Information Center</h2>
+            <div class="tab-container" data-tab-group="bottom-tabs">
+                <button class="tab-btn active" data-tab="bottom-activity">Activity Log</button>
+                <button class="tab-btn" data-tab="bottom-search">Search Results</button>
+                <button class="tab-btn" data-tab="bottom-tasks">Tasks</button>
+                <button class="tab-btn" data-tab="bottom-notifications">Notifications</button>
+                <button class="tab-btn" data-tab="bottom-reports">Reports</button>
+            </div>
+        </div>
+
+        <!-- Activity Log Tab -->
+        <div class="tab-content active" data-tab-content="bottom-activity">
+            <div class="drawer-group" data-drawer-parent="bottom-activity">
+                <div class="drawer-header" data-drawer="activity-recent">
+                    <span class="drawer-toggle">Recent Activity</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="activity-recent">Activity items</div>
+            </div>
+        </div>
+
+        <!-- Search Results Tab -->
+        <div class="tab-content" data-tab-content="bottom-search">
+            <div class="drawer-group" data-drawer-parent="bottom-search">
+                <div class="drawer-header" data-drawer="search-results">
+                    <span class="drawer-toggle">Results</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="search-results">Search results here</div>
+            </div>
+        </div>
+
+        <!-- Tasks Tab -->
+        <div class="tab-content" data-tab-content="bottom-tasks">
+            <div class="drawer-group" data-drawer-parent="bottom-tasks">
+                <div class="drawer-header" data-drawer="tasks-list">
+                    <span class="drawer-toggle">Task List</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="tasks-list">Task items here</div>
+            </div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div class="tab-content" data-tab-content="bottom-notifications">
+            <div class="drawer-group" data-drawer-parent="bottom-notifications">
+                <div class="drawer-header" data-drawer="notif-inbox">
+                    <span class="drawer-toggle">Notification Inbox</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="notif-inbox">Notifications here</div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div class="tab-content" data-tab-content="bottom-reports">
+            <div class="drawer-group" data-drawer-parent="bottom-reports">
+                <div class="drawer-header" data-drawer="reports-generated">
+                    <span class="drawer-toggle">Generated Reports</span>
+                </div>
+                <div class="drawer-content" data-drawer-content="reports-generated">Reports here</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ============================================================
+// RIDICULOUSLY OVER-ENGINEERED DRAWERS - JavaScript Engine
+// ============================================================
+
+// Event delegation helpers
+function addDelegatedListener(container, selector, event, callback) {
+  container.addEventListener(event, (e) => {
+    const target = e.target.closest(selector);
+    if (target) callback.call(target, e);
+  });
+}
+
+// Tab switching
+document.querySelectorAll('[data-tab-group]').forEach(group => {
+  const groupId = group.dataset.tabGroup;
+  const tabs = group.querySelectorAll('[data-tab]');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      const tabId = tab.dataset.tab;
+
+      // Find all tab buttons and content in same group
+      const parent = tab.closest('[data-tab-group]')?.parentElement;
+      if (!parent) return;
+
+      // Deactivate all
+      parent.querySelectorAll('[data-tab-group="' + groupId + '"] .tab-btn').forEach(t => {
+        t.classList.remove('active');
+      });
+      parent.querySelectorAll('[data-tab-content="' + tabId + '"]').forEach(c => {
+        c.classList.remove('active');
+      });
+
+      // Activate selected
+      tab.classList.add('active');
+      parent.querySelectorAll('[data-tab-content="' + tabId + '"]').forEach(c => {
+        c.classList.add('active');
+      });
+    });
+  });
+});
+
+// Drawer toggling
+document.querySelectorAll('[data-drawer-toggle]').forEach(toggle => {
+  toggle.addEventListener('click', (e) => {
+    const header = toggle.closest('[data-drawer-toggle]');
+    const drawerId = header.dataset.drawer;
+    const content = document.querySelector('[data-drawer-content="' + drawerId + '"]');
+
+    if (header && content) {
+      content.classList.toggle('open');
+      header.classList.toggle('open');
+    }
+  });
+});
+
+// Collapsible sections
+document.querySelectorAll('.section-header[data-drawer-toggle]').forEach(header => {
+  header.addEventListener('click', () => {
+    const contentId = header.dataset.drawerContent || header.dataset.drawer;
+    const content = header.parentElement.querySelector('[data-drawer-content="' + contentId + '"]');
+
+    if (content) {
+      content.classList.toggle('open');
+      header.classList.toggle('open');
+    }
+  });
+});
+
+// Slide panel toggles
+document.querySelectorAll('.slide-toggle').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const panelId = btn.dataset.slidePanel;
+    const panel = document.querySelector('[data-slide-panel="' + panelId + '"]');
+
+    if (panel) {
+      panel.classList.toggle('open');
+      btn.style.background = panel.classList.contains('open') ? 'var(--accent-primary)' : '';
+      btn.style.color = panel.classList.contains('open') ? 'var(--bg-primary)' : '';
+    }
+  });
+});
+
+// Accordion functionality
+document.querySelectorAll('[data-accordion]').forEach(accordion => {
+  accordion.querySelectorAll('[data-accordion-toggle]').forEach(header => {
+    header.addEventListener('click', () => {
+      const item = header.closest('[data-accordion-item]');
+      if (!item) return;
+
+      const itemId = item.dataset.accordionItem;
+      const content = item.querySelector('[data-accordion-content="' + itemId + '"]');
+
+      // Close all siblings
+      item.parentElement.querySelectorAll('[data-accordion-item]').forEach(sibling => {
+        const sibContent = sibling.querySelector('[data-accordion-content]');
+        if (sibContent) sibContent.classList.remove('open');
+      });
+
+      // Open this one
+      if (content) {
+        content.classList.add('open');
+      }
+    });
+  });
+});
+
+// Add some fun animations on load
+window.addEventListener('load', () => {
+  document.querySelectorAll('.grid-item').forEach((item, i) => {
+    item.style.animation = `bounceScaleIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) ${i * 0.1}s forwards`;
+  });
+});
+
+// Fun hover effects
+document.querySelectorAll('.drawer-header').forEach(header => {
+  header.addEventListener('mouseenter', () => {
+    header.style.transform = 'translateX(4px)';
+  });
+  header.addEventListener('mouseleave', () => {
+    header.style.transform = '';
+  });
+});
+
+document.querySelectorAll('.section-header').forEach(header => {
+  header.addEventListener('mouseenter', () => {
+    if (!header.classList.contains('open')) {
+      header.style.transform = 'scale(1.02)';
+    }
+  });
+  header.addEventListener('mouseleave', () => {
+    header.style.transform = '';
+  });
+});
+
+// Log initialization
+console.log('Ridiculous Drawers initialized!');
+console.log('Click drawers, tabs, sections, accordions, and slide panels!');
+console.log('Try clicking all the nested elements for maximum chaos!');
+    </script>
+</body>
+</html>
