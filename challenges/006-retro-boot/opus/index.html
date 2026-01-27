@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroOS v3.14 - Boot Sequence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green: #33ff33;
+            --green-dim: #22aa22;
+            --green-dark: #115511;
+            --green-glow: #33ff3366;
+            --bg: #0a0a0a;
+            --amber: #ffaa00;
+            --red: #ff3333;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+
+        .crt-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1200px;
+            max-height: 900px;
+        }
+
+        .crt {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow:
+                inset 0 0 100px rgba(0, 0, 0, 0.9),
+                0 0 50px rgba(51, 255, 51, 0.1);
+        }
+
+        /* CRT curvature effect */
+        .crt::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 90%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 101;
+        }
+
+        /* Flicker effect */
+        .flicker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent;
+            pointer-events: none;
+            z-index: 102;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.02; background: var(--green); }
+        }
+
+        /* Phosphor glow */
+        .phosphor-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            box-shadow: inset 0 0 120px rgba(51, 255, 51, 0.05);
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        /* Screen content */
+        .screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            color: var(--green);
+            font-size: 16px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-shadow: 0 0 5px var(--green-glow), 0 0 10px var(--green-glow);
+        }
+
+        .screen-content {
+            position: relative;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .screen-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .screen-content::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        .screen-content::-webkit-scrollbar-thumb {
+            background: var(--green-dark);
+            border-radius: 4px;
+        }
+
+        /* Boot stages */
+        .boot-stage {
+            display: none;
+        }
+
+        .boot-stage.active {
+            display: block;
+        }
+
+        /* BIOS header */
+        .bios-header {
+            border-bottom: 2px solid var(--green-dim);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bios-title {
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        /* Memory counter */
+        .memory-line {
+            font-family: 'Courier New', monospace;
+        }
+
+        .memory-count {
+            color: var(--green);
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        /* Loading bars */
+        .loading-bar-container {
+            margin: 15px 0;
+        }
+
+        .loading-bar-label {
+            margin-bottom: 5px;
+        }
+
+        .loading-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg);
+            border: 1px solid var(--green-dim);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: var(--green-dark);
+            width: 0%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--green-glow);
+        }
+
+        .loading-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+
+        /* Error messages */
+        .error-msg {
+            color: var(--red);
+            text-shadow: 0 0 5px rgba(255, 51, 51, 0.5);
+        }
+
+        .warning-msg {
+            color: var(--amber);
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+        }
+
+        .success-msg {
+            color: var(--green);
+        }
+
+        /* ASCII art */
+        .ascii-art {
+            font-size: 10px;
+            line-height: 1.1;
+            white-space: pre;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Terminal */
+        .terminal {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .terminal-prompt {
+            color: var(--green);
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--green);
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            outline: none;
+            text-shadow: 0 0 5px var(--green-glow);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--green);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Matrix effect */
+        .matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+        }
+
+        /* Typewriter effect */
+        .typed-line {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* Power on flash */
+        .power-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 200;
+            animation: powerOn 0.5s ease-out forwards;
+        }
+
+        @keyframes powerOn {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0; pointer-events: none; }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Boot complete message */
+        .boot-complete {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .divider {
+            border-top: 1px solid var(--green-dim);
+            margin: 15px 0;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-container">
+        <div class="crt">
+            <div class="phosphor-glow"></div>
+            <div class="screen">
+                <div class="screen-content" id="screenContent">
+                    <!-- Boot stages will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="scanlines"></div>
+            <div class="flicker"></div>
+            <div class="power-flash" id="powerFlash"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== AUDIO ENGINE =====
+        class RetroAudio {
+            constructor() {
+                this.ctx = null;
+                this.initialized = false;
+            }
+
+            init() {
+                if (this.initialized) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.initialized = true;
+            }
+
+            beep(frequency = 800, duration = 0.1, type = 'square', volume = 0.1) {
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            postBeep() {
+                this.beep(1000, 0.15, 'square', 0.08);
+            }
+
+            errorBeep() {
+                this.beep(200, 0.3, 'sawtooth', 0.1);
+            }
+
+            successBeep() {
+                this.beep(800, 0.05, 'square', 0.06);
+                setTimeout(() => this.beep(1200, 0.1, 'square', 0.06), 60);
+            }
+
+            bootChime() {
+                const notes = [523, 659, 784, 1047];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => this.beep(freq, 0.2, 'sine', 0.08), i * 150);
+                });
+            }
+
+            keyClick() {
+                this.beep(4000, 0.02, 'square', 0.03);
+            }
+
+            diskSound() {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => this.beep(100 + Math.random() * 50, 0.05, 'sawtooth', 0.02), i * 80);
+                }
+            }
+
+            hum() {
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+
+                setTimeout(() => {
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+                    setTimeout(() => osc.stop(), 500);
+                }, 2000);
+            }
+        }
+
+        const audio = new RetroAudio();
+
+        // ===== BOOT SEQUENCE ENGINE =====
+        class BootSequence {
+            constructor() {
+                this.screen = document.getElementById('screenContent');
+                this.currentStage = 0;
+                this.typeSpeed = 15;
+            }
+
+            async start() {
+                audio.init();
+                audio.hum();
+
+                await this.delay(800);
+                document.getElementById('powerFlash').style.display = 'none';
+
+                await this.biosScreen();
+                await this.memoryCheck();
+                await this.asciiLogo();
+                await this.systemCheck();
+                await this.loadingBars();
+                await this.errorSequence();
+                await this.finalBoot();
+                await this.startTerminal();
+            }
+
+            async delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async typeText(element, text, speed = this.typeSpeed) {
+                for (let char of text) {
+                    element.textContent += char;
+                    if (char !== ' ' && Math.random() > 0.7) {
+                        audio.keyClick();
+                    }
+                    await this.delay(speed);
+                }
+            }
+
+            async typeLines(lines, container, speed = this.typeSpeed) {
+                for (let line of lines) {
+                    const div = document.createElement('div');
+                    container.appendChild(div);
+                    await this.typeText(div, line, speed);
+                    await this.delay(50);
+                }
+            }
+
+            clearScreen() {
+                this.screen.innerHTML = '';
+            }
+
+            // ===== BIOS SCREEN =====
+            async biosScreen() {
+                this.clearScreen();
+                audio.postBeep();
+
+                const header = document.createElement('div');
+                header.className = 'bios-header';
+                header.innerHTML = `
+                    <div class="bios-title">PHOENIX BIOS v4.20</div>
+                    <div>Copyright (C) 1985-1994 Phoenix Technologies Ltd.</div>
+                `;
+                this.screen.appendChild(header);
+
+                await this.delay(500);
+
+                const lines = [
+                    'CPU: RetroProcessor 486DX-33 @ 33MHz',
+                    'FPU: Integrated',
+                    'CPU Cache: 8KB Write-Through',
+                    '',
+                    'Initializing Plug and Play Cards...',
+                    'PNP Init Completed',
+                    '',
+                ];
+
+                await this.typeLines(lines, this.screen, 10);
+                await this.delay(300);
+                audio.postBeep();
+            }
+
+            // ===== MEMORY CHECK =====
+            async memoryCheck() {
+                const memLine = document.createElement('div');
+                memLine.className = 'memory-line';
+                memLine.innerHTML = 'Memory Test: <span class="memory-count">0</span> KB OK';
+                this.screen.appendChild(memLine);
+
+                const counter = memLine.querySelector('.memory-count');
+                const targetMem = 640;
+                let currentMem = 0;
+
+                while (currentMem < targetMem) {
+                    currentMem += Math.floor(Math.random() * 32) + 16;
+                    if (currentMem > targetMem) currentMem = targetMem;
+                    counter.textContent = currentMem;
+                    if (Math.random() > 0.8) audio.beep(2000 + currentMem * 2, 0.02, 'square', 0.02);
+                    await this.delay(30);
+                }
+
+                audio.successBeep();
+                await this.delay(200);
+
+                const extMemLine = document.createElement('div');
+                extMemLine.className = 'memory-line';
+                extMemLine.innerHTML = 'Extended Memory Test: <span class="memory-count">0</span> KB OK';
+                this.screen.appendChild(extMemLine);
+
+                const extCounter = extMemLine.querySelector('.memory-count');
+                const extTargetMem = 32768;
+                let extCurrentMem = 0;
+
+                while (extCurrentMem < extTargetMem) {
+                    extCurrentMem += Math.floor(Math.random() * 2048) + 512;
+                    if (extCurrentMem > extTargetMem) extCurrentMem = extTargetMem;
+                    extCounter.textContent = extCurrentMem;
+                    if (Math.random() > 0.9) audio.beep(1500 + Math.random() * 500, 0.02, 'square', 0.02);
+                    await this.delay(20);
+                }
+
+                audio.successBeep();
+                await this.delay(500);
+            }
+
+            // ===== ASCII LOGO =====
+            async asciiLogo() {
+                this.clearScreen();
+                audio.diskSound();
+
+                const logoLines = [
+                    '██████╗ ███████╗████████╗██████╗  ██████╗        ██████╗ ███████╗',
+                    '██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗      ██╔═══██╗██╔════╝',
+                    '██████╔╝█████╗     ██║   ██████╔╝██║   ██║█████╗██║   ██║███████╗',
+                    '██╔══██╗██╔══╝     ██║   ██╔══██╗██║   ██║╚════╝██║   ██║╚════██║',
+                    '██║  ██║███████╗   ██║   ██║  ██║╚██████╔╝      ╚██████╔╝███████║',
+                    '╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝        ╚═════╝ ╚══════╝',
+                ];
+
+                const logoContainer = document.createElement('pre');
+                logoContainer.className = 'ascii-art';
+                logoContainer.style.textAlign = 'center';
+                this.screen.appendChild(logoContainer);
+
+                // Draw logo line by line with character reveal
+                for (let line of logoLines) {
+                    const lineEl = document.createElement('div');
+                    logoContainer.appendChild(lineEl);
+
+                    for (let i = 0; i < line.length; i++) {
+                        lineEl.textContent += line[i];
+                        if (i % 8 === 0) {
+                            await this.delay(5);
+                        }
+                    }
+                    audio.beep(400 + logoLines.indexOf(line) * 50, 0.03, 'square', 0.03);
+                    await this.delay(80);
+                }
+
+                await this.delay(300);
+
+                const versionInfo = document.createElement('div');
+                versionInfo.style.textAlign = 'center';
+                versionInfo.style.marginTop = '20px';
+                this.screen.appendChild(versionInfo);
+
+                await this.typeText(versionInfo, 'Version 3.14.159 - "Pi Day Edition"', 20);
+                await this.delay(200);
+
+                const copyright = document.createElement('div');
+                copyright.style.textAlign = 'center';
+                copyright.style.color = 'var(--green-dim)';
+                this.screen.appendChild(copyright);
+
+                await this.typeText(copyright, '(C) 1994 RetroSoft Industries', 15);
+                await this.delay(800);
+            }
+
+            // ===== SYSTEM CHECK =====
+            async systemCheck() {
+                this.clearScreen();
+                audio.diskSound();
+
+                const title = document.createElement('div');
+                title.textContent = '[ SYSTEM INITIALIZATION ]';
+                title.style.textAlign = 'center';
+                title.style.marginBottom = '20px';
+                title.style.borderBottom = '1px solid var(--green-dim)';
+                title.style.paddingBottom = '10px';
+                this.screen.appendChild(title);
+
+                const checks = [
+                    { name: 'Keyboard Controller', status: 'OK' },
+                    { name: 'Floppy Drive A:', status: '1.44MB' },
+                    { name: 'Floppy Drive B:', status: 'Not Installed' },
+                    { name: 'IDE Primary Master', status: 'QUANTUM FIREBALL 540MB' },
+                    { name: 'IDE Primary Slave', status: 'None' },
+                    { name: 'IDE Secondary Master', status: 'CREATIVE CD-ROM' },
+                    { name: 'Video Adapter', status: 'VGA 256 Color' },
+                    { name: 'Sound Card', status: 'Sound Blaster 16' },
+                    { name: 'COM1', status: '3F8h IRQ4' },
+                    { name: 'LPT1', status: '378h IRQ7' },
+                ];
+
+                for (let check of checks) {
+                    const line = document.createElement('div');
+                    line.textContent = `Detecting ${check.name}...`;
+                    this.screen.appendChild(line);
+                    await this.delay(150 + Math.random() * 200);
+                    line.innerHTML = `${check.name.padEnd(25, '.')}${check.status}`;
+                    audio.beep(1200, 0.02, 'square', 0.03);
+                }
+
+                await this.delay(500);
+            }
+
+            // ===== LOADING BARS =====
+            async loadingBars() {
+                this.clearScreen();
+
+                const title = document.createElement('div');
+                title.textContent = '[ LOADING SYSTEM COMPONENTS ]';
+                title.style.marginBottom = '20px';
+                this.screen.appendChild(title);
+
+                const components = [
+                    { name: 'CONFIG.SYS', time: 1500 },
+                    { name: 'AUTOEXEC.BAT', time: 1200 },
+                    { name: 'HIMEM.SYS', time: 800 },
+                    { name: 'EMM386.EXE', time: 1000 },
+                    { name: 'RETROOS KERNEL', time: 2000 },
+                ];
+
+                for (let comp of components) {
+                    const container = document.createElement('div');
+                    container.className = 'loading-bar-container';
+                    container.innerHTML = `
+                        <div class="loading-bar-label">Loading ${comp.name}...</div>
+                        <div class="loading-bar">
+                            <div class="loading-bar-fill"></div>
+                            <div class="loading-bar-text">0%</div>
+                        </div>
+                    `;
+                    this.screen.appendChild(container);
+
+                    const fill = container.querySelector('.loading-bar-fill');
+                    const text = container.querySelector('.loading-bar-text');
+
+                    audio.diskSound();
+
+                    let progress = 0;
+                    const startTime = Date.now();
+
+                    while (progress < 100) {
+                        const elapsed = Date.now() - startTime;
+                        progress = Math.min(100, (elapsed / comp.time) * 100);
+                        fill.style.width = progress + '%';
+                        text.textContent = Math.floor(progress) + '%';
+
+                        if (Math.random() > 0.95) {
+                            audio.beep(800 + progress * 5, 0.02, 'square', 0.02);
+                        }
+
+                        await this.delay(30);
+                    }
+
+                    text.textContent = 'DONE';
+                    audio.successBeep();
+                    await this.delay(200);
+                }
+
+                await this.delay(500);
+            }
+
+            // ===== ERROR SEQUENCE =====
+            async errorSequence() {
+                this.clearScreen();
+
+                const title = document.createElement('div');
+                title.textContent = '[ SYSTEM DIAGNOSTIC ]';
+                title.style.marginBottom = '20px';
+                this.screen.appendChild(title);
+
+                // First error
+                const error1 = document.createElement('div');
+                error1.className = 'error-msg';
+                this.screen.appendChild(error1);
+                await this.typeText(error1, 'ERROR: IRQ Conflict detected on IRQ 5', 25);
+                audio.errorBeep();
+                await this.delay(800);
+
+                const fixing1 = document.createElement('div');
+                fixing1.className = 'warning-msg';
+                this.screen.appendChild(fixing1);
+                await this.typeText(fixing1, 'Attempting automatic resolution...', 20);
+                await this.delay(600);
+
+                audio.diskSound();
+                await this.delay(400);
+
+                const fixed1 = document.createElement('div');
+                fixed1.className = 'success-msg';
+                this.screen.appendChild(fixed1);
+                await this.typeText(fixed1, 'RESOLVED: Reassigned to IRQ 10', 20);
+                audio.successBeep();
+                await this.delay(500);
+
+                this.screen.appendChild(document.createElement('br'));
+
+                // Second error
+                const error2 = document.createElement('div');
+                error2.className = 'error-msg';
+                this.screen.appendChild(error2);
+                await this.typeText(error2, 'WARNING: CMOS checksum invalid', 25);
+                audio.errorBeep();
+                await this.delay(800);
+
+                const fixing2 = document.createElement('div');
+                fixing2.className = 'warning-msg';
+                this.screen.appendChild(fixing2);
+                await this.typeText(fixing2, 'Recalculating CMOS checksum...', 20);
+
+                // Show a mini progress
+                for (let i = 0; i < 3; i++) {
+                    fixing2.textContent += '.';
+                    audio.beep(600, 0.05, 'square', 0.03);
+                    await this.delay(400);
+                }
+
+                const fixed2 = document.createElement('div');
+                fixed2.className = 'success-msg';
+                this.screen.appendChild(fixed2);
+                await this.typeText(fixed2, 'RESOLVED: CMOS data restored from backup', 20);
+                audio.successBeep();
+                await this.delay(500);
+
+                this.screen.appendChild(document.createElement('br'));
+
+                // Third error - more dramatic
+                const error3 = document.createElement('div');
+                error3.className = 'error-msg';
+                this.screen.appendChild(error3);
+                await this.typeText(error3, 'CRITICAL: Boot sector anomaly detected!', 25);
+                audio.errorBeep();
+                audio.errorBeep();
+                await this.delay(300);
+
+                // Fake scary flicker
+                const flicker = document.querySelector('.flicker');
+                flicker.style.animation = 'none';
+                flicker.style.opacity = '0.1';
+                flicker.style.background = 'var(--red)';
+                await this.delay(200);
+                flicker.style.opacity = '0';
+                await this.delay(100);
+                flicker.style.opacity = '0.1';
+                await this.delay(150);
+                flicker.style.opacity = '0';
+                flicker.style.background = 'var(--green)';
+                flicker.style.animation = 'flicker 0.15s infinite';
+
+                await this.delay(500);
+
+                const fixing3 = document.createElement('div');
+                fixing3.className = 'warning-msg';
+                this.screen.appendChild(fixing3);
+                await this.typeText(fixing3, 'Engaging emergency repair protocol...', 20);
+
+                // Dramatic loading
+                const repairBar = document.createElement('div');
+                repairBar.className = 'loading-bar-container';
+                repairBar.innerHTML = `
+                    <div class="loading-bar">
+                        <div class="loading-bar-fill" style="background: var(--amber)"></div>
+                        <div class="loading-bar-text">REPAIRING...</div>
+                    </div>
+                `;
+                this.screen.appendChild(repairBar);
+
+                const fill = repairBar.querySelector('.loading-bar-fill');
+                const text = repairBar.querySelector('.loading-bar-text');
+
+                for (let i = 0; i <= 100; i += 2) {
+                    fill.style.width = i + '%';
+                    if (i > 80) fill.style.background = 'var(--green-dark)';
+                    audio.beep(300 + i * 8, 0.01, 'sawtooth', 0.02);
+                    await this.delay(40);
+                }
+
+                text.textContent = 'COMPLETE';
+
+                const fixed3 = document.createElement('div');
+                fixed3.className = 'success-msg';
+                this.screen.appendChild(fixed3);
+                await this.typeText(fixed3, 'RESOLVED: Boot sector integrity verified', 20);
+
+                // Victory chime
+                audio.bootChime();
+
+                await this.delay(1000);
+            }
+
+            // ===== FINAL BOOT =====
+            async finalBoot() {
+                this.clearScreen();
+
+                const bootMsg = document.createElement('div');
+                bootMsg.style.textAlign = 'center';
+                this.screen.appendChild(bootMsg);
+
+                await this.typeText(bootMsg, 'All systems nominal.', 30);
+                await this.delay(300);
+
+                this.screen.appendChild(document.createElement('br'));
+
+                const starting = document.createElement('div');
+                starting.style.textAlign = 'center';
+                this.screen.appendChild(starting);
+                await this.typeText(starting, 'Starting RetroOS...', 40);
+
+                await this.delay(500);
+
+                // Dramatic dots
+                for (let i = 0; i < 5; i++) {
+                    starting.textContent += '.';
+                    audio.beep(800, 0.05, 'square', 0.03);
+                    await this.delay(300);
+                }
+
+                await this.delay(500);
+                audio.bootChime();
+                await this.delay(800);
+            }
+
+            // ===== TERMINAL =====
+            async startTerminal() {
+                this.clearScreen();
+
+                const terminal = document.createElement('div');
+                terminal.className = 'terminal';
+                terminal.innerHTML = `
+                    <div class="terminal-output" id="terminalOutput"></div>
+                    <div class="terminal-input-line">
+                        <span class="terminal-prompt">C:\\RETROOS&gt;</span>
+                        <input type="text" class="terminal-input" id="terminalInput" autofocus>
+                        <span class="cursor"></span>
+                    </div>
+                `;
+                this.screen.appendChild(terminal);
+
+                const output = document.getElementById('terminalOutput');
+                const input = document.getElementById('terminalInput');
+
+                // Welcome message
+                const welcome = [
+                    '',
+                    '╔══════════════════════════════════════════════════════════════════╗',
+                    '║                   Welcome to RetroOS v3.14.159                   ║',
+                    '║                      "Pi Day Edition"                            ║',
+                    '║                                                                  ║',
+                    '║  Type "help" for available commands                              ║',
+                    '╚══════════════════════════════════════════════════════════════════╝',
+                    '',
+                    'System ready. 640KB conventional memory free.',
+                    '32768KB extended memory available.',
+                    '',
+                ];
+
+                for (let line of welcome) {
+                    const div = document.createElement('div');
+                    div.textContent = line;
+                    output.appendChild(div);
+                    await this.delay(50);
+                }
+
+                // Terminal commands
+                const commands = {
+                    help: () => [
+                        '',
+                        'Available commands:',
+                        '  help     - Display this help message',
+                        '  about    - About RetroOS',
+                        '  matrix   - Enter the Matrix',
+                        '  credits  - View credits',
+                        '  clear    - Clear screen',
+                        '  dir      - List directory',
+                        '  ver      - Show version',
+                        '  exit     - Shutdown system',
+                        '',
+                    ],
+                    about: () => [
+                        '',
+                        '╔══════════════════════════════════════════╗',
+                        '║           ABOUT RETROOS                  ║',
+                        '╠══════════════════════════════════════════╣',
+                        '║                                          ║',
+                        '║  RetroOS is a nostalgic simulation of    ║',
+                        '║  classic computing experiences from      ║',
+                        '║  the golden age of personal computers.   ║',
+                        '║                                          ║',
+                        '║  Featuring:                               ║',
+                        '║  - Authentic boot sequences              ║',
+                        '║  - CRT monitor effects                   ║',
+                        '║  - Retro sound effects                   ║',
+                        '║  - Pure nostalgia                        ║',
+                        '║                                          ║',
+                        '║  "Computing the way it used to be"       ║',
+                        '║                                          ║',
+                        '╚══════════════════════════════════════════╝',
+                        '',
+                    ],
+                    credits: () => [
+                        '',
+                        '════════════════════════════════════════════',
+                        '                  CREDITS                   ',
+                        '════════════════════════════════════════════',
+                        '',
+                        '  Created with love for retro computing',
+                        '',
+                        '  Inspired by:',
+                        '    - Phoenix BIOS',
+                        '    - MS-DOS',
+                        '    - Classic CRT monitors',
+                        '    - The Sound Blaster era',
+                        '',
+                        '  Technologies used:',
+                        '    - HTML5 Canvas',
+                        '    - CSS3 Animations',
+                        '    - Web Audio API',
+                        '    - Pure JavaScript',
+                        '',
+                        '  No frameworks were harmed in the making',
+                        '  of this boot sequence.',
+                        '',
+                        '════════════════════════════════════════════',
+                        '',
+                    ],
+                    ver: () => [
+                        '',
+                        'RetroOS Version 3.14.159',
+                        'Build Date: 1994-03-14',
+                        '',
+                    ],
+                    dir: () => [
+                        '',
+                        ' Volume in drive C is RETROOS',
+                        ' Volume Serial Number is 1337-CAFE',
+                        '',
+                        ' Directory of C:\\RETROOS',
+                        '',
+                        '.',
+                        '..',
+                        '',
+                        '.',
+                        '..',
+                        'CONFIG   SYS          1,024  03-14-94   3:14p',
+                        'AUTOEXEC BAT            512  03-14-94   3:14p',
+                        'COMMAND  COM         54,619  03-14-94   3:14p',
+                        'RETROOS  SYS        131,072  03-14-94   3:14p',
+                        'NOSTALGIA           <DIR>    03-14-94   3:14p',
+                        '',
+                        '        4 file(s)        187,227 bytes',
+                        '        2 dir(s)     524,288,000 bytes free',
+                        '',
+                    ],
+                    clear: () => {
+                        output.innerHTML = '';
+                        return [];
+                    },
+                    matrix: () => {
+                        this.startMatrix(output);
+                        return ['', 'Entering the Matrix...', '(Press any key to exit)', ''];
+                    },
+                    exit: () => {
+                        this.shutdown();
+                        return [];
+                    },
+                };
+
+                input.addEventListener('keydown', async (e) => {
+                    if (e.key === 'Enter') {
+                        const cmd = input.value.trim().toLowerCase();
+                        input.value = '';
+
+                        // Echo command
+                        const cmdLine = document.createElement('div');
+                        cmdLine.innerHTML = `<span style="color: var(--green-dim)">C:\\RETROOS&gt;</span> ${cmd}`;
+                        output.appendChild(cmdLine);
+
+                        audio.keyClick();
+
+                        if (cmd === '') {
+                            // Do nothing for empty command
+                        } else if (commands[cmd]) {
+                            const result = commands[cmd]();
+                            for (let line of result) {
+                                const div = document.createElement('div');
+                                div.textContent = line;
+                                output.appendChild(div);
+                            }
+                        } else {
+                            const errDiv = document.createElement('div');
+                            errDiv.className = 'error-msg';
+                            errDiv.textContent = `Bad command or file name: ${cmd}`;
+                            output.appendChild(errDiv);
+                            audio.errorBeep();
+                        }
+
+                        output.scrollTop = output.scrollHeight;
+                    }
+                });
+
+                input.focus();
+
+                // Keep focus on input
+                document.addEventListener('click', () => input.focus());
+            }
+
+            // ===== MATRIX EFFECT =====
+            startMatrix(container) {
+                const canvas = document.createElement('canvas');
+                canvas.className = 'matrix-canvas';
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                container.style.position = 'relative';
+                container.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()';
+                const fontSize = 14;
+                const columns = canvas.width / fontSize;
+                const drops = [];
+
+                for (let i = 0; i < columns; i++) {
+                    drops[i] = Math.random() * -100;
+                }
+
+                const draw = () => {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = '#33ff33';
+                    ctx.font = fontSize + 'px monospace';
+
+                    for (let i = 0; i < drops.length; i++) {
+                        const char = chars[Math.floor(Math.random() * chars.length)];
+                        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+                        drops[i]++;
+                    }
+                };
+
+                const interval = setInterval(draw, 50);
+
+                const stopMatrix = () => {
+                    clearInterval(interval);
+                    canvas.remove();
+                    document.removeEventListener('keydown', stopMatrix);
+                };
+
+                document.addEventListener('keydown', stopMatrix);
+            }
+
+            // ===== SHUTDOWN =====
+            async shutdown() {
+                const screen = document.querySelector('.screen-content');
+                screen.innerHTML = '';
+
+                const shutdownMsg = document.createElement('div');
+                shutdownMsg.style.textAlign = 'center';
+                shutdownMsg.style.marginTop = '40%';
+                screen.appendChild(shutdownMsg);
+
+                await this.typeText(shutdownMsg, 'Shutting down...', 50);
+                audio.beep(800, 0.2, 'sine', 0.05);
+
+                await this.delay(500);
+
+                const saveMsg = document.createElement('div');
+                saveMsg.style.textAlign = 'center';
+                screen.appendChild(saveMsg);
+                await this.typeText(saveMsg, 'Saving system state...', 40);
+
+                await this.delay(800);
+
+                // Fade to black effect
+                const crt = document.querySelector('.crt');
+                crt.style.transition = 'all 1s ease-out';
+                crt.style.filter = 'brightness(0)';
+
+                // Shutdown sound - descending tone
+                for (let i = 0; i < 5; i++) {
+                    audio.beep(800 - i * 150, 0.1, 'sine', 0.05);
+                    await this.delay(100);
+                }
+
+                await this.delay(1500);
+
+                // Show "It is now safe" message
+                crt.style.filter = 'brightness(1)';
+                screen.innerHTML = `
+                    <div style="text-align: center; margin-top: 35%; color: var(--amber);">
+                        <div style="font-size: 24px; margin-bottom: 20px;">It is now safe to turn off</div>
+                        <div style="font-size: 24px;">your computer.</div>
+                        <div style="margin-top: 40px; font-size: 14px; color: var(--green-dim);">
+                            (Refresh page to reboot)
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // ===== START =====
+        document.addEventListener('click', function initAudio() {
+            const boot = new BootSequence();
+            boot.start();
+            document.removeEventListener('click', initAudio);
+        }, { once: true });
+
+        // Show click to start message
+        document.getElementById('screenContent').innerHTML = `
+            <div style="text-align: center; margin-top: 40%; animation: blink 1s step-end infinite;">
+                <div style="font-size: 18px;">Click anywhere to power on</div>
+            </div>
+        `;
+    </script>
+</body>
+</html>

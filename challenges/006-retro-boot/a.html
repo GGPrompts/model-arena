@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RETRO-BOOT 9000</title>
+  <style>
+    :root {
+      --bg: #020a02;
+      --fg: #33ff66;
+      --fg-dim: #1faa45;
+      --fg-bright: #7dff9e;
+      --error: #ff4d4d;
+      --warn: #ffd166;
+      --glow: rgba(80, 255, 140, 0.22);
+      --glow-strong: rgba(80, 255, 140, 0.42);
+      --screen-edge: #0a1a0a;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(1200px 700px at 50% 40%, #021602 0%, #010a01 50%, #000600 100%);
+      color: var(--fg);
+      font-family: "Courier New", Courier, monospace;
+      overflow: hidden;
+    }
+
+    .stage {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .crt {
+      position: relative;
+      width: min(1100px, 96vw);
+      height: min(720px, 92vh);
+      background: var(--bg);
+      border-radius: 28px;
+      box-shadow:
+        0 0 0 2px #0f2a0f,
+        0 0 0 6px #071407,
+        0 24px 80px rgba(0, 0, 0, 0.7),
+        inset 0 0 80px rgba(0, 0, 0, 0.7),
+        inset 0 0 120px rgba(0, 255, 80, 0.03);
+      overflow: hidden;
+      transform: perspective(1400px) rotateX(1.1deg) rotateY(-0.6deg);
+      border: 1px solid var(--screen-edge);
+      isolation: isolate;
+    }
+
+    /* Subtle screen curvature + vignette */
+    .crt::before {
+      content: "";
+      position: absolute;
+      inset: -8%;
+      background:
+        radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.35) 76%, rgba(0, 0, 0, 0.8) 100%);
+      pointer-events: none;
+      z-index: 5;
+      mix-blend-mode: multiply;
+    }
+
+    /* Scanlines */
+    .crt::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0.16) 3px,
+          rgba(0, 0, 0, 0.2) 4px
+        );
+      opacity: 0.32;
+      pointer-events: none;
+      z-index: 6;
+      animation: scan-shift 10s linear infinite;
+    }
+
+    @keyframes scan-shift {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(4px); }
+    }
+
+    .crt-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow:
+        inset 0 0 50px var(--glow),
+        inset 0 0 120px rgba(80, 255, 140, 0.08);
+      mix-blend-mode: screen;
+      animation: glow-pulse 5.5s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.72; }
+      50% { opacity: 0.92; }
+    }
+
+    .flicker {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 7;
+      background: rgba(120, 255, 160, 0.02);
+      mix-blend-mode: screen;
+      animation: flicker 0.14s steps(2, end) infinite;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.08; }
+      50% { opacity: 0.18; }
+      100% { opacity: 0.1; }
+    }
+
+    .content {
+      position: relative;
+      z-index: 3;
+      height: 100%;
+      padding: 26px 28px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--fg);
+      text-shadow:
+        0 0 6px var(--glow-strong),
+        0 0 18px rgba(80, 255, 140, 0.18);
+      animation: content-flicker 7s linear infinite;
+      filter: saturate(1.05) contrast(1.02);
+    }
+
+    @keyframes content-flicker {
+      0%, 97%, 100% { opacity: 1; }
+      98% { opacity: 0.94; }
+      99% { opacity: 0.97; }
+    }
+
+    .boot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 14px;
+      color: var(--fg-dim);
+      letter-spacing: 0.5px;
+      user-select: none;
+      border-bottom: 1px solid rgba(80, 255, 140, 0.15);
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+    }
+
+    .boot-log,
+    .terminal-output {
+      flex: 1;
+      overflow: hidden;
+      white-space: pre-wrap;
+      line-height: 1.32;
+      font-size: 16px;
+    }
+
+    .boot-log {
+      padding-right: 8px;
+    }
+
+    .line {
+      display: block;
+    }
+
+    .dim { color: var(--fg-dim); }
+    .bright { color: var(--fg-bright); }
+    .warn { color: var(--warn); }
+    .error { color: var(--error); text-shadow: 0 0 10px rgba(255, 80, 80, 0.28); }
+    .ok { color: #7dff9e; }
+
+    .blip {
+      animation: blip 0.2s ease-out;
+    }
+
+    @keyframes blip {
+      0% { opacity: 0.2; }
+      100% { opacity: 1; }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      margin-left: 2px;
+      animation: cursor-blink 1s steps(2, end) infinite;
+    }
+
+    @keyframes cursor-blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .terminal {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .terminal-header {
+      font-size: 15px;
+      color: var(--fg-dim);
+      border-bottom: 1px dashed rgba(80, 255, 140, 0.18);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+
+    .terminal-output {
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .prompt-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+
+    .prompt-prefix {
+      color: var(--fg-bright);
+      white-space: nowrap;
+    }
+
+    .prompt-input {
+      flex: 1;
+      min-width: 0;
+      outline: none;
+      border: none;
+      background: transparent;
+      color: var(--fg);
+      font: inherit;
+      caret-color: var(--fg-bright);
+      text-shadow: inherit;
+    }
+
+    .prompt-input[contenteditable="true"]:empty::before {
+      content: "type a command...";
+      color: rgba(80, 255, 140, 0.35);
+      pointer-events: none;
+    }
+
+    .matrix-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 400ms ease;
+      mix-blend-mode: screen;
+    }
+
+    .matrix-canvas.active {
+      opacity: 0.42;
+    }
+
+    .start-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(800px 400px at 50% 50%, rgba(0, 40, 0, 0.6) 0%, rgba(0, 0, 0, 0.88) 70%, rgba(0, 0, 0, 0.95) 100%);
+      color: var(--fg-bright);
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid rgba(80, 255, 140, 0.18);
+    }
+
+    .start-overlay.hidden {
+      display: none;
+    }
+
+    .start-card {
+      padding: 22px 28px;
+      border: 1px solid rgba(80, 255, 140, 0.22);
+      background: rgba(0, 30, 0, 0.35);
+      box-shadow:
+        0 0 20px rgba(80, 255, 140, 0.12),
+        inset 0 0 40px rgba(80, 255, 140, 0.05);
+      max-width: 560px;
+    }
+
+    .start-title {
+      font-size: 22px;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .start-subtitle {
+      font-size: 14px;
+      color: var(--fg-dim);
+      margin-bottom: 14px;
+    }
+
+    .start-hint {
+      font-size: 13px;
+      color: var(--fg-dim);
+      margin-top: 12px;
+    }
+
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      border: 1px solid rgba(80, 255, 140, 0.25);
+      padding: 4px 8px;
+      font-size: 12px;
+      color: var(--fg-dim);
+      background: rgba(0, 20, 0, 0.35);
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: rgba(80, 255, 140, 0.5);
+      text-align: right;
+      user-select: none;
+      margin-top: 4px;
+    }
+
+    /* Scrollbar styling */
+    .terminal-output::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .terminal-output::-webkit-scrollbar-track {
+      background: rgba(0, 20, 0, 0.6);
+    }
+
+    .terminal-output::-webkit-scrollbar-thumb {
+      background: rgba(80, 255, 140, 0.35);
+      border: 1px solid rgba(80, 255, 140, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="crt" id="crt">
+      <canvas id="matrixCanvas" class="matrix-canvas" aria-hidden="true"></canvas>
+      <div class="crt-glow" aria-hidden="true"></div>
+      <div class="content">
+        <div class="boot-header">
+          <span>RETRO-BOOT 9000 :: SYSTEM CONSOLE</span>
+          <span id="clock" class="dim"></span>
+        </div>
+
+        <pre id="bootLog" class="boot-log" aria-live="polite"></pre>
+
+        <div id="terminal" class="terminal" aria-live="polite">
+          <div class="terminal-header">retro@boot9000:~  --  Type <span class="bright">help</span> to get started</div>
+          <div id="terminalOutput" class="terminal-output"></div>
+          <div class="prompt-line">
+            <span class="prompt-prefix">retro@boot9000:~$</span>
+            <div id="terminalInput" class="prompt-input" contenteditable="true" role="textbox" aria-label="Terminal input" spellcheck="false"></div>
+            <span class="cursor">█</span>
+          </div>
+        </div>
+
+        <div class="footer-note">© 1986-1996 RETROTEK INDUSTRIES</div>
+      </div>
+      <div class="flicker" aria-hidden="true"></div>
+
+      <div id="startOverlay" class="start-overlay" role="button" aria-label="Start boot sequence" tabindex="0">
+        <div class="start-card">
+          <div class="start-title">RETRO-BOOT 9000</div>
+          <div class="start-subtitle">Authentic-ish boot drama with CRT glow and beeps.</div>
+          <div>Click or press <span class="bright">Enter</span> to power on.</div>
+          <div class="badge-row">
+            <span class="badge">BIOS POST</span>
+            <span class="badge">MEMORY CHECK</span>
+            <span class="badge">SELF-HEALING ERRORS</span>
+            <span class="badge">FAKE TERMINAL</span>
+            <span class="badge">WEB AUDIO</span>
+          </div>
+          <div class="start-hint">(Audio needs a user gesture in most browsers.)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const bootLog = document.getElementById("bootLog");
+      const terminal = document.getElementById("terminal");
+      const terminalOutput = document.getElementById("terminalOutput");
+      const terminalInput = document.getElementById("terminalInput");
+      const startOverlay = document.getElementById("startOverlay");
+      const matrixCanvas = document.getElementById("matrixCanvas");
+      const clockEl = document.getElementById("clock");
+
+      const state = {
+        audioReady: false,
+        humNode: null,
+        matrixActive: false,
+        bootComplete: false,
+        shuttingDown: false,
+      };
+
+      /* ----------------------------- Clock ----------------------------- */
+      function updateClock() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        clockEl.textContent =
+          `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+          `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      /* ----------------------------- Audio ----------------------------- */
+      let audioCtx = null;
+
+      function ensureAudio() {
+        if (state.audioReady) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        state.audioReady = true;
+        startHum();
+      }
+
+      function nowTime() {
+        return audioCtx ? audioCtx.currentTime : 0;
+      }
+
+      function beep({ freq = 880, duration = 0.12, type = "square", volume = 0.15, when = 0 } = {}) {
+        if (!audioCtx) return;
+        const t0 = nowTime() + when;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t0);
+
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(t0);
+        osc.stop(t0 + duration + 0.02);
+      }
+
+      function beepPattern(pattern) {
+        if (!audioCtx) return;
+        let offset = 0;
+        for (const step of pattern) {
+          beep({ ...step, when: offset });
+          offset += step.gap ?? (step.duration || 0.12) + 0.03;
+        }
+      }
+
+      function startHum() {
+        if (!audioCtx || state.humNode) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = "sawtooth";
+        osc.frequency.value = 55;
+
+        filter.type = "lowpass";
+        filter.frequency.value = 240;
+        filter.Q.value = 0.8;
+
+        gain.gain.value = 0.015;
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        state.humNode = { osc, gain, filter };
+
+        // Gentle hum wobble for life.
+        const wobble = () => {
+          if (!state.humNode) return;
+          const t = nowTime();
+          const target = 0.012 + Math.random() * 0.012;
+          gain.gain.cancelScheduledValues(t);
+          gain.gain.linearRampToValueAtTime(target, t + 1.4);
+          setTimeout(wobble, 1200 + Math.random() * 1200);
+        };
+        wobble();
+      }
+
+      function humDip(ms = 220) {
+        if (!audioCtx || !state.humNode) return;
+        const { gain } = state.humNode;
+        const t = nowTime();
+        const base = 0.014;
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.linearRampToValueAtTime(0.004, t + 0.04);
+        gain.gain.linearRampToValueAtTime(base, t + ms / 1000);
+      }
+
+      /* ----------------------------- Helpers ----------------------------- */
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      function clearBootLog() {
+        bootLog.textContent = "";
+      }
+
+      function scrollBootToEnd() {
+        bootLog.scrollTop = bootLog.scrollHeight;
+      }
+
+      function makeLine(text = "", className = "") {
+        const span = document.createElement("span");
+        span.className = `line ${className}`.trim();
+        span.textContent = text;
+        return span;
+      }
+
+      function appendLine(text = "", className = "") {
+        const line = makeLine(text, className);
+        bootLog.appendChild(line);
+        bootLog.appendChild(document.createTextNode("\n"));
+        scrollBootToEnd();
+        return line;
+      }
+
+      async function typeLine(text, { className = "", cps = 120, jitter = 0.35, beepEvery = 0 } = {}) {
+        const line = makeLine("", className);
+        bootLog.appendChild(line);
+        bootLog.appendChild(document.createTextNode("\n"));
+
+        const baseDelay = 1000 / cps;
+        for (let i = 0; i < text.length; i += 1) {
+          line.textContent += text[i];
+          if (beepEvery > 0 && i % beepEvery === 0 && text[i].trim()) {
+            beep({ freq: 1200, duration: 0.05, volume: 0.04, type: "square" });
+          }
+          scrollBootToEnd();
+          const variance = 1 + (Math.random() * 2 - 1) * jitter;
+          await sleep(Math.max(2, baseDelay * variance));
+        }
+        line.classList.add("blip");
+        return line;
+      }
+
+      function updateLine(line, text, className) {
+        line.textContent = text;
+        if (className) {
+          line.className = `line ${className}`;
+        }
+        scrollBootToEnd();
+      }
+
+      function formatKB(n) {
+        return `${n.toLocaleString()} KB`;
+      }
+
+      function padPercent(p) {
+        return `${String(p).padStart(3, " ")}%`;
+      }
+
+      function makeBar(pct, width = 28) {
+        const filled = Math.round((pct / 100) * width);
+        const empty = width - filled;
+        return `[${"#".repeat(filled)}${".".repeat(empty)}]`;
+      }
+
+      function randomChoice(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      /* --------------------------- Boot Sequence --------------------------- */
+      async function biosPost() {
+        clearBootLog();
+        humDip(260);
+        beepPattern([
+          { freq: 520, duration: 0.12, volume: 0.12 },
+          { freq: 780, duration: 0.14, volume: 0.12, gap: 0.2 },
+          { freq: 1040, duration: 0.16, volume: 0.12 },
+        ]);
+
+        appendLine("RETROTEK BIOS v3.14 (C) 1986-1996", "bright");
+        appendLine("--------------------------------------", "dim");
+        await sleep(180);
+
+        await typeLine("CPU: RTK-9000 @ 12.00MHz .......................... OK", { cps: 220 });
+        await sleep(80);
+        await typeLine("Math Coprocessor: RTK-9000-FPU .................... OK", { cps: 220 });
+        await sleep(60);
+        await typeLine("DMA Controller .................................... OK", { cps: 220 });
+        await sleep(60);
+        await typeLine("Interrupt Table ................................... OK", { cps: 220 });
+        await sleep(60);
+        await typeLine("Detecting Floppy Drives ........................... A: 1.44MB", { cps: 210 });
+        await sleep(60);
+        await typeLine("Detecting Fixed Disks ............................. C: 512MB", { cps: 210 });
+        await sleep(120);
+
+        const pciDevices = [
+          "PCI: 00:01.0 VGA-compatible controller",
+          "PCI: 00:02.0 Multi I/O controller",
+          "PCI: 00:03.0 Sound Blaster-compatible device",
+        ];
+        for (const dev of pciDevices) {
+          await typeLine(dev, { cps: 240 });
+          await sleep(40);
+        }
+
+        appendLine("", "");
+      }
+
+      async function memoryCheck() {
+        const totalKB = 65536;
+        const line = appendLine("Memory Test: 0 KB / 65,536 KB", "bright");
+        await sleep(120);
+
+        let current = 0;
+        const steps = [512, 1024, 2048, 4096, 8192];
+
+        while (current < totalKB) {
+          current += randomChoice(steps);
+          if (current > totalKB) current = totalKB;
+          updateLine(line, `Memory Test: ${formatKB(current)} / ${formatKB(totalKB)}`, "bright");
+          if (current % 8192 === 0) {
+            beep({ freq: 920, duration: 0.06, volume: 0.06 });
+          }
+          await sleep(16 + Math.random() * 24);
+        }
+
+        beepPattern([
+          { freq: 1180, duration: 0.08, volume: 0.08 },
+          { freq: 1480, duration: 0.09, volume: 0.1, gap: 0.12 },
+        ]);
+
+        await sleep(140);
+        appendLine("Memory Test: PASS  (Fast Page Mode Enabled)", "ok");
+        appendLine("", "");
+      }
+
+      async function asciiLogoDraw() {
+        const logo = [
+          "  ____  _____ _____ _____   ____   ___   ___   ___  ",
+          " |  _ \\| ____|_   _|_   _| | __ ) / _ \\ / _ \\ / _ \\ ",
+          " | |_) |  _|   | |   | |   |  _ \\| | | | | | | | | |",
+          " |  _ <| |___  | |   | |   | |_) | |_| | |_| | |_| |",
+          " |_| \\_\\_____| |_|   |_|   |____/ \\___/ \\___/ \\___/ ",
+          "                 RETRO-BOOT 9000                     ",
+        ];
+
+        appendLine("Drawing boot logo into video memory...", "dim");
+        await sleep(120);
+
+        for (const row of logo) {
+          const line = appendLine("", "bright");
+          for (let i = 0; i < row.length; i += 1) {
+            line.textContent += row[i];
+            if (row[i].trim() && i % 6 === 0) {
+              beep({ freq: 1500 - (i % 300), duration: 0.025, volume: 0.035, type: "square" });
+            }
+            await sleep(4);
+          }
+          await sleep(24);
+        }
+
+        appendLine("Logo render: COMPLETE", "ok");
+        appendLine("", "");
+      }
+
+      async function loadingBars() {
+        const tasks = [
+          { label: "Initializing Peripheral Buses", speed: 1.0 },
+          { label: "Mounting RETROFS Volume C:", speed: 1.25 },
+          { label: "Calibrating CRT Deflection Coils", speed: 0.9 },
+          { label: "Spinning Up Quantum Flux Drive", speed: 1.15 },
+        ];
+
+        for (const task of tasks) {
+          const line = appendLine(`${task.label} ${makeBar(0)} ${padPercent(0)}`, "dim");
+          let pct = 0;
+
+          while (pct < 100) {
+            const bump = (Math.random() * 6 + 2) * task.speed;
+            pct = Math.min(100, pct + bump);
+            const pctInt = Math.floor(pct);
+            updateLine(line, `${task.label} ${makeBar(pctInt)} ${padPercent(pctInt)}`, pctInt >= 100 ? "ok" : "dim");
+            if (pctInt % 25 === 0) {
+              beep({ freq: 900 + pctInt * 4, duration: 0.04, volume: 0.05 });
+            }
+            await sleep(40 + Math.random() * 60);
+          }
+
+          beep({ freq: 1680, duration: 0.06, volume: 0.08, type: "triangle" });
+          await sleep(100);
+        }
+
+        appendLine("", "");
+      }
+
+      async function selfHealingErrors() {
+        const errors = [
+          {
+            code: "E201",
+            message: "RTC drift exceeds tolerated threshold",
+            fix: "Re-synchronizing crystal oscillator",
+          },
+          {
+            code: "E404",
+            message: "CONFIG.SYS checksum mismatch",
+            fix: "Restoring configuration from shadow ROM",
+          },
+          {
+            code: "E808",
+            message: "Turbo button not responding",
+            fix: "Applying percussive maintenance protocol",
+          },
+        ];
+
+        appendLine("Running startup diagnostics...", "dim");
+        await sleep(140);
+
+        for (const err of errors) {
+          const errLine = appendLine(`ERROR ${err.code}: ${err.message}`, "error");
+          humDip(300);
+          beepPattern([
+            { freq: 320, duration: 0.12, volume: 0.12, type: "sawtooth" },
+            { freq: 260, duration: 0.12, volume: 0.12, type: "sawtooth", gap: 0.16 },
+            { freq: 210, duration: 0.14, volume: 0.12, type: "sawtooth" },
+          ]);
+          await sleep(520);
+
+          const fixLine = appendLine(`AUTO-REPAIR: ${err.fix}...`, "warn");
+          await sleep(420);
+
+          updateLine(errLine, `ERROR ${err.code}: ${err.message}  [RESOLVED]`, "dim");
+          updateLine(fixLine, `AUTO-REPAIR: ${err.fix}... DONE`, "ok");
+
+          beepPattern([
+            { freq: 880, duration: 0.08, volume: 0.08, type: "square" },
+            { freq: 1175, duration: 0.1, volume: 0.1, type: "square", gap: 0.12 },
+            { freq: 1560, duration: 0.12, volume: 0.12, type: "triangle" },
+          ]);
+          await sleep(240);
+        }
+
+        appendLine("Diagnostics: STABLE", "ok");
+        appendLine("", "");
+      }
+
+      async function finalBoot() {
+        await typeLine("Loading RETRO-KERNEL 1.0.0.........................", { cps: 220 });
+        await sleep(160);
+        const barLine = appendLine(`Kernel Load ${makeBar(0, 36)} ${padPercent(0)}`, "dim");
+
+        let pct = 0;
+        while (pct < 100) {
+          pct = Math.min(100, pct + Math.random() * 9 + 4);
+          const pctInt = Math.floor(pct);
+          updateLine(barLine, `Kernel Load ${makeBar(pctInt, 36)} ${padPercent(pctInt)}`, pctInt === 100 ? "ok" : "dim");
+          if (pctInt % 20 === 0) {
+            beep({ freq: 1000 + pctInt * 6, duration: 0.05, volume: 0.06, type: "square" });
+          }
+          await sleep(50 + Math.random() * 80);
+        }
+
+        await sleep(200);
+        appendLine("Bringing subsystems online...", "dim");
+        await sleep(120);
+        appendLine("Subsystems: VIDEO AUDIO IO NETWORK (imaginary) ..... OK", "ok");
+        await sleep(140);
+        appendLine("", "");
+
+        beepPattern([
+          { freq: 640, duration: 0.09, volume: 0.1, type: "triangle" },
+          { freq: 880, duration: 0.1, volume: 0.12, type: "triangle", gap: 0.12 },
+          { freq: 1280, duration: 0.14, volume: 0.13, type: "square" },
+        ]);
+
+        await typeLine("BOOT SEQUENCE COMPLETE. Launching command shell...", { cps: 200 });
+        await sleep(260);
+      }
+
+      async function runBootSequence() {
+        state.bootComplete = false;
+        state.shuttingDown = false;
+        bootLog.style.display = "block";
+        terminal.style.display = "none";
+        matrixCanvas.classList.remove("active");
+        state.matrixActive = false;
+
+        await biosPost();
+        await memoryCheck();
+        await asciiLogoDraw();
+        await loadingBars();
+        await selfHealingErrors();
+        await finalBoot();
+
+        bootLog.style.display = "none";
+        terminal.style.display = "flex";
+        state.bootComplete = true;
+
+        // A small celebratory chirp.
+        beepPattern([
+          { freq: 1320, duration: 0.07, volume: 0.08, type: "square" },
+          { freq: 1760, duration: 0.1, volume: 0.1, type: "square", gap: 0.14 },
+        ]);
+
+        writeTerminalBanner();
+        focusInput();
+      }
+
+      /* ----------------------------- Terminal ----------------------------- */
+      function focusInput() {
+        terminalInput.focus();
+        placeCaretAtEnd(terminalInput);
+      }
+
+      function placeCaretAtEnd(el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      function termWrite(text = "", className = "") {
+        const line = document.createElement("div");
+        line.className = `line ${className}`.trim();
+        line.textContent = text;
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        return line;
+      }
+
+      function termWritePre(text = "", className = "") {
+        const pre = document.createElement("pre");
+        pre.className = `line ${className}`.trim();
+        pre.textContent = text;
+        terminalOutput.appendChild(pre);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        return pre;
+      }
+
+      function termEchoCommand(cmd) {
+        termWrite(`retro@boot9000:~$ ${cmd}`, "bright");
+      }
+
+      function writeTerminalBanner() {
+        terminalOutput.innerHTML = "";
+        termWrite("RETRO-BOOT 9000 Command Shell", "bright");
+        termWrite("Type 'help' to list available commands.", "dim");
+        termWrite("");
+      }
+
+      function cmdHelp() {
+        termWrite("Available commands:", "bright");
+        termWrite("  help     Show this help text", "dim");
+        termWrite("  about    System information", "dim");
+        termWrite("  matrix   Toggle matrix mode", "dim");
+        termWrite("  credits  Who built this illusion", "dim");
+        termWrite("  exit     Dramatic shutdown (ish)", "dim");
+      }
+
+      function cmdAbout() {
+        const info = [
+          "System:   RETRO-BOOT 9000",
+          "Kernel:   retro-kernel 1.0.0",
+          "Display:  CRT phosphor matrix (simulated)",
+          "Audio:    Web Audio API synth beeps + hum",
+          "Status:   improbably stable",
+        ].join("\n");
+        termWritePre(info, "dim");
+      }
+
+      /* ----------------------------- Matrix ----------------------------- */
+      const matrixState = {
+        ctx: null,
+        width: 0,
+        height: 0,
+        columns: 0,
+        drops: [],
+        rafId: null,
+        fontSize: 16,
+        chars: "01$#@%&*+=-<>/\\|[]{}RETROBOOT9000",
+      };
+
+      function resizeMatrix() {
+        const rect = matrixCanvas.getBoundingClientRect();
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        matrixCanvas.width = Math.floor(rect.width * dpr);
+        matrixCanvas.height = Math.floor(rect.height * dpr);
+        matrixState.width = matrixCanvas.width;
+        matrixState.height = matrixCanvas.height;
+
+        if (!matrixState.ctx) {
+          matrixState.ctx = matrixCanvas.getContext("2d");
+        }
+        matrixState.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        matrixState.columns = Math.max(10, Math.floor(rect.width / matrixState.fontSize));
+        matrixState.drops = new Array(matrixState.columns).fill(0).map(() => Math.random() * -50);
+      }
+
+      function matrixFrame() {
+        if (!state.matrixActive) return;
+        const ctx = matrixState.ctx;
+        const rect = matrixCanvas.getBoundingClientRect();
+
+        ctx.fillStyle = "rgba(0, 10, 0, 0.12)";
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        ctx.font = `${matrixState.fontSize}px Courier New, monospace`;
+
+        for (let i = 0; i < matrixState.columns; i += 1) {
+          const x = i * matrixState.fontSize;
+          const y = matrixState.drops[i] * matrixState.fontSize;
+          const ch = matrixState.chars[Math.floor(Math.random() * matrixState.chars.length)];
+
+          ctx.fillStyle = i % 7 === 0 ? "#b8ffcb" : "#33ff66";
+          ctx.shadowColor = "rgba(80,255,140,0.35)";
+          ctx.shadowBlur = 8;
+          ctx.fillText(ch, x, y);
+
+          if (y > rect.height && Math.random() > 0.975) {
+            matrixState.drops[i] = 0;
+          }
+          matrixState.drops[i] += 1 + Math.random() * 0.6;
+        }
+
+        matrixState.rafId = requestAnimationFrame(matrixFrame);
+      }
+
+      function startMatrix() {
+        if (state.matrixActive) return;
+        state.matrixActive = true;
+        resizeMatrix();
+        matrixCanvas.classList.add("active");
+        matrixState.ctx.fillStyle = "rgba(0,0,0,1)";
+        matrixState.ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+        beepPattern([
+          { freq: 440, duration: 0.08, volume: 0.08, type: "triangle" },
+          { freq: 660, duration: 0.1, volume: 0.09, type: "square", gap: 0.14 },
+        ]);
+        matrixFrame();
+      }
+
+      function stopMatrix() {
+        if (!state.matrixActive) return;
+        state.matrixActive = false;
+        matrixCanvas.classList.remove("active");
+        if (matrixState.rafId) cancelAnimationFrame(matrixState.rafId);
+        matrixState.rafId = null;
+        beep({ freq: 520, duration: 0.08, volume: 0.07, type: "triangle" });
+      }
+
+      window.addEventListener("resize", () => {
+        if (state.matrixActive) resizeMatrix();
+      });
+
+      /* --------------------------- Command Logic --------------------------- */
+      async function dramaticShutdown() {
+        if (state.shuttingDown) return;
+        state.shuttingDown = true;
+
+        stopMatrix();
+        beepPattern([
+          { freq: 330, duration: 0.12, volume: 0.1, type: "square" },
+          { freq: 220, duration: 0.18, volume: 0.1, type: "sawtooth", gap: 0.2 },
+        ]);
+
+        termWrite("Initiating shutdown sequence...", "warn");
+        await sleep(300);
+        termWrite("Syncing imaginary disks... done.", "dim");
+        await sleep(240);
+        termWrite("Powering down subsystems...", "dim");
+        await sleep(260);
+        termWrite("It is now safe to turn off your monitor.", "bright");
+        await sleep(800);
+
+        bootLog.style.display = "block";
+        terminal.style.display = "none";
+        clearBootLog();
+        appendLine("SYSTEM HALTED", "error");
+        appendLine("", "");
+        appendLine("Press power to reboot.", "dim");
+
+        startOverlay.classList.remove("hidden");
+        state.shuttingDown = false;
+      }
+
+      async function handleCommand(raw) {
+        const cmd = raw.trim().toLowerCase();
+        if (!cmd) return;
+
+        termEchoCommand(raw);
+
+        switch (cmd) {
+          case "help": {
+            beep({ freq: 1040, duration: 0.06, volume: 0.07 });
+            cmdHelp();
+            break;
+          }
+          case "about": {
+            beepPattern([
+              { freq: 880, duration: 0.05, volume: 0.06 },
+              { freq: 990, duration: 0.06, volume: 0.06, gap: 0.1 },
+            ]);
+            cmdAbout();
+            break;
+          }
+          case "matrix": {
+            if (state.matrixActive) {
+              stopMatrix();
+              termWrite("Matrix mode: disabled.", "dim");
+            } else {
+              startMatrix();
+              termWrite("Matrix mode: enabled.", "bright");
+            }
+            break;
+          }
+          case "credits": {
+            beep({ freq: 1320, duration: 0.07, volume: 0.07, type: "triangle" });
+            termWritePre(
+              [
+                "RETRO-BOOT 9000",
+                "",
+                "Design:     You + Codex",
+                "Aesthetic:  CRT phosphor dreams",
+                "Audio:      Web Audio API oscillators",
+                "Special:    Self-healing errors department",
+              ].join("\n"),
+              "dim"
+            );
+            break;
+          }
+          case "exit": {
+            await dramaticShutdown();
+            break;
+          }
+          default: {
+            beep({ freq: 240, duration: 0.12, volume: 0.09, type: "sawtooth" });
+            termWrite(`Unknown command: ${raw}`, "error");
+            termWrite("Type 'help' for a list of commands.", "dim");
+          }
+        }
+      }
+
+      terminalInput.addEventListener("keydown", async (e) => {
+        if (!state.bootComplete || state.shuttingDown) return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const text = terminalInput.textContent || "";
+          terminalInput.textContent = "";
+          await handleCommand(text);
+          focusInput();
+        } else if (e.key === "c" && (e.ctrlKey || e.metaKey)) {
+          // Prevent browser default copy interruption when empty.
+          if (!(terminalInput.textContent || "").length) {
+            e.preventDefault();
+            beep({ freq: 600, duration: 0.05, volume: 0.04 });
+          }
+        }
+      });
+
+      terminal.addEventListener("mousedown", () => {
+        if (state.bootComplete && !state.shuttingDown) {
+          focusInput();
+        }
+      });
+
+      /* --------------------------- Power On Flow --------------------------- */
+      async function powerOn() {
+        startOverlay.classList.add("hidden");
+        ensureAudio();
+
+        // Power-on thump + beep.
+        humDip(320);
+        beepPattern([
+          { freq: 90, duration: 0.16, volume: 0.2, type: "sine" },
+          { freq: 660, duration: 0.12, volume: 0.12, type: "square", gap: 0.22 },
+        ]);
+
+        await sleep(180);
+        await runBootSequence();
+      }
+
+      function overlayKeyHandler(e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          powerOn();
+        }
+      }
+
+      startOverlay.addEventListener("click", powerOn);
+      startOverlay.addEventListener("keydown", overlayKeyHandler);
+
+      // Keep caret in a good spot if users click elsewhere.
+      document.addEventListener("click", (e) => {
+        if (!state.bootComplete || state.shuttingDown) return;
+        if (!terminal.contains(e.target)) {
+          focusInput();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

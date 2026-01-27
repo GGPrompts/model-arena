@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroOS v3.14 - Boot Sequence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        .crt-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* CRT Screen Curve */
+        .crt-screen {
+            position: absolute;
+            inset: 0;
+            background: #0a0a0a;
+            border-radius: 20px;
+            overflow: hidden;
+            transform: perspective(1000px) rotateX(1deg);
+            box-shadow:
+                inset 0 0 100px rgba(0, 255, 0, 0.05),
+                inset 0 0 50px rgba(0, 0, 0, 0.8),
+                0 0 30px rgba(0, 255, 0, 0.1);
+        }
+
+        /* Screen content */
+        .screen-content {
+            position: absolute;
+            inset: 20px;
+            background: #000800;
+            padding: 20px;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.3) 0px,
+                rgba(0, 0, 0, 0.3) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Flicker effect */
+        .flicker {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 255, 0, 0.02);
+            pointer-events: none;
+            z-index: 99;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 0.97; }
+            50% { opacity: 1; }
+        }
+
+        /* Phosphor glow */
+        .glow {
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 150px rgba(0, 255, 0, 0.1);
+            pointer-events: none;
+            z-index: 98;
+        }
+
+        /* Screen curvature overlay */
+        .curve-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                transparent 70%,
+                rgba(0, 0, 0, 0.4) 100%
+            );
+            pointer-events: none;
+            z-index: 97;
+        }
+
+        /* Text styles */
+        .terminal-text {
+            color: #00ff00;
+            font-size: 16px;
+            line-height: 1.4;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8), 0 0 20px rgba(0, 255, 0, 0.4);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .dim {
+            color: #006600;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+
+        .bright {
+            color: #88ff88;
+            text-shadow: 0 0 15px rgba(0, 255, 0, 1), 0 0 30px rgba(0, 255, 0, 0.6);
+        }
+
+        .error {
+            color: #ff4444;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        .warning {
+            color: #ffaa00;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.8);
+        }
+
+        .success {
+            color: #00ff00;
+            text-shadow: 0 0 15px rgba(0, 255, 0, 1);
+        }
+
+        /* Progress bar container */
+        .progress-bar {
+            display: inline-block;
+            width: 300px;
+            height: 16px;
+            border: 1px solid #00ff00;
+            position: relative;
+            margin: 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+            transition: width 0.1s linear;
+        }
+
+        /* Cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: #00ff00;
+            animation: blink 0.8s step-end infinite;
+            vertical-align: bottom;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Terminal input */
+        .terminal-input {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .terminal-input.active {
+            display: block;
+        }
+
+        .terminal-input input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            outline: none;
+            width: calc(100% - 100px);
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+            caret-color: #00ff00;
+        }
+
+        .prompt {
+            color: #00ff00;
+        }
+
+        /* Matrix rain effect */
+        .matrix-canvas {
+            position: absolute;
+            inset: 0;
+            display: none;
+            z-index: 50;
+        }
+
+        /* Hidden elements */
+        .hidden {
+            display: none;
+        }
+
+        /* Boot content container */
+        #boot-content {
+            height: 100%;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        #boot-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ASCII art styling */
+        .ascii-art {
+            font-size: 12px;
+            line-height: 1.1;
+            letter-spacing: 2px;
+        }
+
+        /* Power on flash */
+        .power-flash {
+            position: absolute;
+            inset: 0;
+            background: #00ff00;
+            z-index: 200;
+            animation: powerOn 0.5s ease-out forwards;
+        }
+
+        @keyframes powerOn {
+            0% { opacity: 1; }
+            20% { opacity: 0.8; }
+            40% { opacity: 0; }
+            60% { opacity: 0.3; }
+            100% { opacity: 0; display: none; }
+        }
+
+        /* CRT turn on effect */
+        .crt-on {
+            animation: crtOn 1s ease-out forwards;
+        }
+
+        @keyframes crtOn {
+            0% {
+                transform: scale(1, 0.01);
+                filter: brightness(10);
+            }
+            50% {
+                transform: scale(1, 0.01);
+                filter: brightness(5);
+            }
+            70% {
+                transform: scale(1, 1);
+                filter: brightness(2);
+            }
+            100% {
+                transform: scale(1, 1);
+                filter: brightness(1);
+            }
+        }
+
+        /* Glitch effect */
+        .glitch {
+            animation: glitch 0.3s ease-in-out;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 1px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-1px, 2px); }
+            80% { transform: translate(1px, -2px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-container">
+        <div class="crt-screen crt-on">
+            <div class="screen-content">
+                <canvas class="matrix-canvas" id="matrix-canvas"></canvas>
+                <div id="boot-content" class="terminal-text"></div>
+                <div class="terminal-input" id="terminal-input">
+                    <span class="prompt">RETRO-OS&gt; </span>
+                    <input type="text" id="command-input" autofocus autocomplete="off">
+                </div>
+            </div>
+            <div class="scanlines"></div>
+            <div class="flicker"></div>
+            <div class="glow"></div>
+            <div class="curve-overlay"></div>
+        </div>
+        <div class="power-flash" id="power-flash"></div>
+    </div>
+
+    <script>
+        // Web Audio API setup
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        // Sound effects
+        function playBeep(frequency = 800, duration = 0.1, type = 'square', volume = 0.3) {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
+        function playPowerOnSound() {
+            if (!audioCtx) return;
+
+            // Deep hum building up
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(50, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.8);
+
+            // CRT spark
+            setTimeout(() => {
+                playBeep(2000, 0.05, 'sawtooth', 0.2);
+            }, 200);
+        }
+
+        function playSuccessChime() {
+            playBeep(523, 0.15, 'square', 0.2);
+            setTimeout(() => playBeep(659, 0.15, 'square', 0.2), 100);
+            setTimeout(() => playBeep(784, 0.2, 'square', 0.25), 200);
+        }
+
+        function playErrorSound() {
+            playBeep(200, 0.3, 'sawtooth', 0.3);
+        }
+
+        function playFixSound() {
+            playBeep(400, 0.1, 'square', 0.2);
+            setTimeout(() => playBeep(600, 0.1, 'square', 0.2), 80);
+            setTimeout(() => playBeep(800, 0.15, 'square', 0.25), 160);
+        }
+
+        function playKeySound() {
+            playBeep(800 + Math.random() * 400, 0.02, 'square', 0.1);
+        }
+
+        function playDiskSound() {
+            // Simulate disk access sounds
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    playBeep(100 + Math.random() * 50, 0.05, 'sawtooth', 0.1);
+                }, i * 50);
+            }
+        }
+
+        function playBackgroundHum() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+
+            osc.start(audioCtx.currentTime);
+
+            return { osc, gain };
+        }
+
+        // DOM elements
+        const bootContent = document.getElementById('boot-content');
+        const terminalInput = document.getElementById('terminal-input');
+        const commandInput = document.getElementById('command-input');
+        const matrixCanvas = document.getElementById('matrix-canvas');
+
+        // Utility functions
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function typeText(text, speed = 30, className = '') {
+            const span = document.createElement('span');
+            if (className) span.className = className;
+            bootContent.appendChild(span);
+
+            for (let i = 0; i < text.length; i++) {
+                span.textContent += text[i];
+                if (text[i] !== ' ' && Math.random() > 0.7) {
+                    playKeySound();
+                }
+                bootContent.scrollTop = bootContent.scrollHeight;
+                await delay(speed);
+            }
+        }
+
+        function printText(text, className = '') {
+            const span = document.createElement('span');
+            if (className) span.className = className;
+            span.textContent = text;
+            bootContent.appendChild(span);
+            bootContent.scrollTop = bootContent.scrollHeight;
+        }
+
+        function printLine(text = '', className = '') {
+            printText(text + '\n', className);
+        }
+
+        async function typeLine(text, speed = 30, className = '') {
+            await typeText(text + '\n', speed, className);
+        }
+
+        // ASCII Art Logo
+        const asciiLogo = `
+    ██████╗ ███████╗████████╗██████╗  ██████╗        ██████╗ ███████╗
+    ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗      ██╔═══██╗██╔════╝
+    ██████╔╝█████╗     ██║   ██████╔╝██║   ██║█████╗██║   ██║███████╗
+    ██╔══██╗██╔══╝     ██║   ██╔══██╗██║   ██║╚════╝██║   ██║╚════██║
+    ██║  ██║███████╗   ██║   ██║  ██║╚██████╔╝      ╚██████╔╝███████║
+    ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝        ╚═════╝ ╚══════╝
+                       [ SYSTEM VERSION 3.14.159 ]
+`;
+
+        async function drawAsciiArt() {
+            const lines = asciiLogo.split('\n');
+            const container = document.createElement('pre');
+            container.className = 'ascii-art bright';
+            bootContent.appendChild(container);
+
+            for (const line of lines) {
+                container.textContent += line + '\n';
+                playBeep(300 + Math.random() * 200, 0.02, 'square', 0.1);
+                bootContent.scrollTop = bootContent.scrollHeight;
+                await delay(80);
+            }
+
+            await delay(500);
+        }
+
+        // Progress bar animation
+        async function showProgressBar(label, duration = 2000, glitchAt = -1) {
+            const container = document.createElement('div');
+            printText(label + ' ');
+
+            const barContainer = document.createElement('span');
+            barContainer.innerHTML = `
+                <span class="progress-bar">
+                    <span class="progress-fill" style="width: 0%"></span>
+                </span>
+                <span class="percent">  0%</span>
+            `;
+            bootContent.appendChild(barContainer);
+
+            const fill = barContainer.querySelector('.progress-fill');
+            const percent = barContainer.querySelector('.percent');
+
+            const steps = 50;
+            const stepDuration = duration / steps;
+
+            for (let i = 0; i <= steps; i++) {
+                const progress = (i / steps) * 100;
+                fill.style.width = progress + '%';
+                percent.textContent = String(Math.floor(progress)).padStart(3, ' ') + '%';
+
+                if (glitchAt > 0 && i === Math.floor(steps * glitchAt)) {
+                    // Glitch effect
+                    bootContent.classList.add('glitch');
+                    await delay(100);
+                    bootContent.classList.remove('glitch');
+                }
+
+                if (i % 10 === 0) {
+                    playBeep(100 + progress * 5, 0.02, 'square', 0.05);
+                }
+
+                await delay(stepDuration);
+            }
+
+            printText('\n');
+            bootContent.scrollTop = bootContent.scrollHeight;
+        }
+
+        // Memory check animation
+        async function memoryCheck() {
+            printLine('Memory Test: ', 'dim');
+
+            const memorySpan = document.createElement('span');
+            memorySpan.className = 'bright';
+            bootContent.appendChild(memorySpan);
+
+            const totalMem = 640; // Classic 640KB
+            const step = 16;
+
+            for (let i = 0; i <= totalMem; i += step) {
+                memorySpan.textContent = `${i}K`;
+                if (i % 64 === 0) {
+                    playBeep(500 + (i / totalMem) * 500, 0.02, 'square', 0.1);
+                }
+                await delay(20);
+            }
+
+            memorySpan.textContent = `${totalMem}K OK`;
+            printText('\n');
+            playBeep(1000, 0.1, 'square', 0.2);
+            await delay(200);
+
+            // Extended memory
+            printText('Extended Memory: ', 'dim');
+            const extSpan = document.createElement('span');
+            extSpan.className = 'bright';
+            bootContent.appendChild(extSpan);
+
+            const extMem = 65536; // 64MB
+            const extStep = 2048;
+
+            for (let i = 0; i <= extMem; i += extStep) {
+                extSpan.textContent = `${i}K`;
+                if (i % 8192 === 0) {
+                    playBeep(600 + (i / extMem) * 400, 0.02, 'square', 0.08);
+                }
+                await delay(15);
+            }
+
+            extSpan.textContent = `${extMem}K OK`;
+            printText('\n');
+            playSuccessChime();
+        }
+
+        // Fake error that fixes itself
+        async function fakeError(errorMsg, fixMsg) {
+            printText('\n');
+            playErrorSound();
+            bootContent.classList.add('glitch');
+            await typeLine(`[ERROR] ${errorMsg}`, 20, 'error');
+            bootContent.classList.remove('glitch');
+
+            await delay(800);
+
+            printText('[FIXING] ', 'warning');
+
+            const dots = document.createElement('span');
+            dots.className = 'warning';
+            bootContent.appendChild(dots);
+
+            for (let i = 0; i < 5; i++) {
+                dots.textContent += '.';
+                playBeep(300 + i * 50, 0.05, 'square', 0.15);
+                await delay(200);
+            }
+
+            printText('\n');
+            playFixSound();
+            await typeLine(`[FIXED] ${fixMsg}`, 20, 'success');
+            await delay(300);
+        }
+
+        // Boot sequence
+        async function bootSequence() {
+            // Initialize audio on first interaction
+            document.addEventListener('click', initAudio, { once: true });
+            document.addEventListener('keydown', initAudio, { once: true });
+
+            // Auto-init audio (may be blocked by browser)
+            initAudio();
+
+            // Power on effect
+            await delay(500);
+            playPowerOnSound();
+            await delay(1000);
+
+            // BIOS POST
+            printLine('═'.repeat(70), 'dim');
+            printLine('  RETRO BIOS v2.51 - Copyright (C) 1987-1995 RetroTech Industries', 'bright');
+            printLine('═'.repeat(70), 'dim');
+            printLine('');
+
+            playDiskSound();
+            await delay(300);
+
+            await typeLine('Initializing system...', 40);
+            await delay(200);
+
+            printLine('');
+            printLine('CPU: Retro-X 486DX2-66 @ 66MHz', 'dim');
+            playBeep(400, 0.05, 'square', 0.15);
+            await delay(150);
+
+            printLine('FPU: Integrated Floating Point Unit', 'dim');
+            playBeep(450, 0.05, 'square', 0.15);
+            await delay(150);
+
+            printLine('Cache: 256KB L2 Cache Detected', 'dim');
+            playBeep(500, 0.05, 'square', 0.15);
+            await delay(300);
+
+            printLine('');
+
+            // Memory check
+            await memoryCheck();
+
+            printLine('');
+            await delay(300);
+
+            // Hardware detection
+            await typeLine('Detecting hardware...', 40);
+            printLine('');
+
+            const hardware = [
+                'Primary Master:   QUANTUM FIREBALL 540MB',
+                'Primary Slave:    TEAC CD-ROM 4X',
+                'Secondary Master: None',
+                'Floppy Drive A:   1.44MB 3.5"',
+                'Video Adapter:    VESA VGA 1024x768 256 Colors',
+                'Sound Card:       Sound Blaster Pro Compatible'
+            ];
+
+            for (const hw of hardware) {
+                printLine('  ' + hw, 'dim');
+                playBeep(350 + Math.random() * 100, 0.03, 'square', 0.1);
+                await delay(180);
+            }
+
+            await delay(500);
+            printLine('');
+
+            // First error
+            await fakeError(
+                'IRQ Conflict detected on COM2',
+                'IRQ reassigned successfully'
+            );
+
+            // Loading ASCII Logo
+            printLine('');
+            printLine('');
+            await drawAsciiArt();
+
+            printLine('');
+
+            // Loading bars
+            await showProgressBar('Loading Kernel       ', 1500, 0.3);
+            await showProgressBar('Initializing Drivers ', 1200);
+
+            // Second error
+            await fakeError(
+                'DMA Controller timeout on Channel 3',
+                'Controller reset - Operation normal'
+            );
+
+            await showProgressBar('Mounting Filesystems ', 1000);
+            await showProgressBar('Starting Services    ', 1800, 0.7);
+
+            // Third error
+            await fakeError(
+                'Config.sys contains deprecated entries',
+                'Migrated to modern configuration'
+            );
+
+            await showProgressBar('Loading User Profile ', 800);
+            await showProgressBar('Finalizing Boot      ', 600);
+
+            printLine('');
+            printLine('═'.repeat(70), 'dim');
+
+            // Boot complete
+            playSuccessChime();
+            await delay(300);
+
+            await typeLine('', 0);
+            printLine('  RETRO-OS Version 3.14.159 - Build 19870816', 'bright');
+            printLine('  (C) Copyright RetroTech Industries 1987-1995', 'dim');
+            printLine('  All Rights Reserved.', 'dim');
+            printLine('');
+            printLine('  System Memory: 65536K Conventional + Extended', 'dim');
+            printLine('  System Time: ' + new Date().toLocaleString(), 'dim');
+            printLine('');
+            printLine('═'.repeat(70), 'dim');
+            printLine('');
+
+            await typeLine('Boot sequence complete. Welcome to RETRO-OS!', 50, 'success');
+            printLine('');
+            await typeLine('Type "help" for available commands.', 30, 'dim');
+            printLine('');
+
+            // Activate terminal
+            terminalInput.classList.add('active');
+            commandInput.focus();
+        }
+
+        // Terminal commands
+        const commands = {
+            help: () => {
+                printLine('');
+                printLine('╔════════════════════════════════════════════════════════════╗', 'bright');
+                printLine('║              RETRO-OS COMMAND REFERENCE                    ║', 'bright');
+                printLine('╠════════════════════════════════════════════════════════════╣', 'bright');
+                printLine('║  help    - Display this help message                       ║', 'dim');
+                printLine('║  about   - About RETRO-OS                                  ║', 'dim');
+                printLine('║  matrix  - Enter the Matrix (press any key to exit)        ║', 'dim');
+                printLine('║  credits - Display credits                                 ║', 'dim');
+                printLine('║  clear   - Clear the screen                                ║', 'dim');
+                printLine('║  date    - Display current date and time                   ║', 'dim');
+                printLine('║  reboot  - Restart the system                              ║', 'dim');
+                printLine('║  exit    - Shutdown the system                             ║', 'dim');
+                printLine('╚════════════════════════════════════════════════════════════╝', 'bright');
+                printLine('');
+            },
+
+            about: () => {
+                printLine('');
+                printLine('╔════════════════════════════════════════════════════════════╗', 'bright');
+                printLine('║                    ABOUT RETRO-OS                          ║', 'bright');
+                printLine('╠════════════════════════════════════════════════════════════╣', 'bright');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  RETRO-OS is a nostalgic tribute to the golden age of      ║', 'dim');
+                printLine('║  personal computing. This system emulates the look and     ║', 'dim');
+                printLine('║  feel of DOS-era computers with a modern twist.            ║', 'dim');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  Features:                                                 ║', 'dim');
+                printLine('║  • Authentic CRT screen effects                            ║', 'dim');
+                printLine('║  • Phosphor glow and scanline simulation                   ║', 'dim');
+                printLine('║  • Retro sound effects via Web Audio API                   ║', 'dim');
+                printLine('║  • Theatrical boot sequence with fake BIOS POST            ║', 'dim');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  "640K ought to be enough for anybody."                    ║', 'bright');
+                printLine('║                                                            ║', 'dim');
+                printLine('╚════════════════════════════════════════════════════════════╝', 'bright');
+                printLine('');
+            },
+
+            credits: () => {
+                printLine('');
+                printLine('╔════════════════════════════════════════════════════════════╗', 'bright');
+                printLine('║                       CREDITS                              ║', 'bright');
+                printLine('╠════════════════════════════════════════════════════════════╣', 'bright');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  Created with love for retro computing                     ║', 'dim');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  Technologies Used:                                        ║', 'dim');
+                printLine('║  • HTML5 / CSS3 / JavaScript                               ║', 'dim');
+                printLine('║  • Web Audio API for authentic sounds                      ║', 'dim');
+                printLine('║  • Canvas API for Matrix effect                            ║', 'dim');
+                printLine('║                                                            ║', 'dim');
+                printLine('║  Special Thanks:                                           ║', 'dim');
+                printLine('║  • The 8-bit generation                                    ║', 'dim');
+                printLine('║  • MS-DOS and its command line heritage                    ║', 'dim');
+                printLine('║  • Every CRT monitor that ever hummed                      ║', 'dim');
+                printLine('║                                                            ║', 'dim');
+                printLine('║            Press F to pay respects to floppies             ║', 'bright');
+                printLine('║                                                            ║', 'dim');
+                printLine('╚════════════════════════════════════════════════════════════╝', 'bright');
+                printLine('');
+            },
+
+            clear: () => {
+                bootContent.innerHTML = '';
+            },
+
+            date: () => {
+                printLine('');
+                printLine('Current Date/Time: ' + new Date().toLocaleString(), 'bright');
+                printLine('');
+            },
+
+            matrix: () => {
+                startMatrix();
+            },
+
+            reboot: async () => {
+                printLine('');
+                printLine('Initiating system restart...', 'warning');
+                playBeep(600, 0.2, 'square', 0.3);
+                await delay(1000);
+                location.reload();
+            },
+
+            exit: async () => {
+                printLine('');
+                terminalInput.classList.remove('active');
+
+                await typeLine('Shutting down RETRO-OS...', 40, 'warning');
+                await delay(500);
+                await typeLine('Saving system state...', 40, 'dim');
+                await delay(300);
+                await typeLine('Unmounting filesystems...', 40, 'dim');
+                await delay(300);
+
+                playBeep(400, 0.3, 'sawtooth', 0.3);
+
+                await typeLine('', 0);
+                printLine('');
+                printLine('It is now safe to turn off your computer.', 'bright');
+                printLine('');
+                printLine('    ████████████████████████████████████', 'dim');
+                printLine('    ██                                ██', 'dim');
+                printLine('    ██   THANK YOU FOR USING RETRO-OS ██', 'dim');
+                printLine('    ██                                ██', 'dim');
+                printLine('    ████████████████████████████████████', 'dim');
+
+                // Fade to black effect
+                await delay(2000);
+                document.querySelector('.screen-content').style.transition = 'opacity 2s';
+                document.querySelector('.screen-content').style.opacity = '0';
+            }
+        };
+
+        // Matrix rain effect
+        let matrixRunning = false;
+
+        function startMatrix() {
+            matrixRunning = true;
+            matrixCanvas.style.display = 'block';
+            terminalInput.classList.remove('active');
+
+            const ctx = matrixCanvas.getContext('2d');
+            matrixCanvas.width = matrixCanvas.offsetWidth;
+            matrixCanvas.height = matrixCanvas.offsetHeight;
+
+            const chars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const fontSize = 14;
+            const columns = matrixCanvas.width / fontSize;
+            const drops = [];
+
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.random() * -100;
+            }
+
+            function draw() {
+                if (!matrixRunning) return;
+
+                ctx.fillStyle = 'rgba(0, 8, 0, 0.05)';
+                ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+                ctx.fillStyle = '#0f0';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillStyle = `rgba(0, ${150 + Math.random() * 105}, 0, ${0.8 + Math.random() * 0.2})`;
+                    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+
+            // Play matrix sound
+            playBeep(100, 0.5, 'sawtooth', 0.1);
+
+            printLine('');
+            printLine('Entering the Matrix... (Press any key to exit)', 'bright');
+        }
+
+        function stopMatrix() {
+            matrixRunning = false;
+            matrixCanvas.style.display = 'none';
+            terminalInput.classList.add('active');
+            commandInput.focus();
+            printLine('');
+            printLine('Exited the Matrix.', 'success');
+            printLine('');
+            playBeep(800, 0.1, 'square', 0.2);
+        }
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (matrixRunning) {
+                stopMatrix();
+                return;
+            }
+        });
+
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = commandInput.value.trim().toLowerCase();
+                commandInput.value = '';
+
+                printLine('RETRO-OS> ' + cmd);
+                playBeep(600, 0.05, 'square', 0.15);
+
+                if (cmd === '') {
+                    return;
+                }
+
+                if (commands[cmd]) {
+                    commands[cmd]();
+                } else {
+                    printLine('');
+                    printLine(`Bad command or file name: '${cmd}'`, 'error');
+                    printLine('Type "help" for available commands.', 'dim');
+                    printLine('');
+                    playBeep(200, 0.1, 'sawtooth', 0.2);
+                }
+            }
+        });
+
+        // Start boot sequence
+        bootSequence();
+    </script>
+</body>
+</html>

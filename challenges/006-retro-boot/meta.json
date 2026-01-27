@@ -1,0 +1,15 @@
+{
+  "id": "006-retro-boot",
+  "title": "Retro OS Boot",
+  "date": "2026-01-27",
+  "prompt": "Build a fake retro computer boot sequence in a single HTML file. Include: BIOS POST screen, memory check with counting numbers, ASCII art logo that draws in, multiple loading bars with percentages, fake error messages that fix themselves with satisfying beeps, finally boots into a fake terminal with working commands (help, about, matrix, credits, exit). Add CRT screen effects - scanlines, slight flicker, phosphor glow, subtle screen curve. Green-on-black aesthetic. Use Web Audio API for retro beeps and hums. Make it theatrical and satisfying to watch. All self-contained.",
+  "contestants": ["gpt-5.2-codex", "gemini-native", "claude-opus-4.5", "claude-sonnet-4.5", "claude-sonnet-4.5"],
+  "note": "Codex on high reasoning. Two Sonnets for A/B comparison.",
+  "answers": {
+    "a": "gpt-5.2-codex",
+    "b": "gemini-native",
+    "c": "claude-opus-4.5",
+    "d": "claude-sonnet-4.5",
+    "e": "claude-sonnet-4.5"
+  }
+}
