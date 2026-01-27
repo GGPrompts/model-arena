@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BALATRO HYPNOSIS</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let clicks pass through to canvas if needed */
+        }
+
+        .title-container {
+            text-align: center;
+            transform: perspective(500px) rotateX(10deg);
+            margin-bottom: 2rem;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 6rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            margin: 0;
+            
+            /* Rainbow Gradient Text */
+            background: linear-gradient(
+                90deg, 
+                #ff00ff, 
+                #00ffff, 
+                #ffff00, 
+                #ff00ff
+            );
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            
+            animation: shine 3s linear infinite;
+            
+            /* Glitchy Text Shadow */
+            text-shadow: 
+                2px 2px 0px rgba(0, 255, 255, 0.3),
+                -2px -2px 0px rgba(255, 0, 255, 0.3);
+            
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: -10px;
+            letter-spacing: 0.5em;
+            text-shadow: 0 0 10px #4080ff;
+            opacity: 0.8;
+        }
+
+        .menu {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            pointer-events: auto;
+        }
+
+        .menu-item {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #444; /* Dim state */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            position: relative;
+            padding: 5px 20px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid transparent;
+            text-align: center;
+            
+            /* Skew for style */
+            transform: skewX(-10deg);
+        }
+
+        .menu-item:hover {
+            color: #ffd700; /* Gold */
+            text-shadow: 
+                0 0 10px #ffd700,
+                0 0 20px #ff00ff;
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            transform: skewX(-10deg) scale(1.1);
+            letter-spacing: 0.1em;
+        }
+
+        .menu-item::before {
+            content: '>';
+            position: absolute;
+            left: -20px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: #00ffff;
+        }
+
+        .menu-item:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        /* CRT Overlay Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.3;
+        }
+        
+        /* CRT Vignette */
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%);
+            pointer-events: none;
+            z-index: 101;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="glCanvas"></canvas>
+    </div>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div id="ui-layer">
+        <div class="title-container">
+            <h1>JACKPOT</h1>
+            <div class="subtitle">SYNERGY ENGINE</div>
+        </div>
+
+        <ul class="menu">
+            <li class="menu-item">Play</li>
+            <li class="menu-item">Collection</li>
+            <li class="menu-item">Options</li>
+            <li class="menu-item">Quit</li>
+        </ul>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl');
+
+        if (!gl) {
+            alert('Unable to initialize WebGL. Your browser or machine may not support it.');
+        }
+
+        // --- Shader Sources ---
+
+        const vsSource = `
+            attribute vec4 aVertexPosition;
+            void main() {
+                gl_Position = aVertexPosition;
+            }
+        `;
+
+        const fsSource = `
+            precision mediump float;
+            
+            uniform float uTime;
+            uniform vec2 uResolution;
+            
+            // Neon Palette
+            vec3 colorCyan = vec3(0.0, 1.0, 1.0);
+            vec3 colorMagenta = vec3(1.0, 0.0, 1.0);
+            vec3 colorPurple = vec3(0.6, 0.0, 1.0);
+            vec3 colorBlue = vec3(0.0, 0.2, 1.0);
+            vec3 colorGold = vec3(1.0, 0.8, 0.0);
+
+            // SDF for a circle (blob)
+            float sdCircle(vec2 p, float r) {
+                return length(p) - r;
+            }
+
+            // Smooth minimum for blending blobs
+            float smin(float a, float b, float k) {
+                float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+                return mix(b, a, h) - k * h * (1.0 - h);
+            }
+
+            // Pseudo-random
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            void main() {
+                vec2 uv = gl_FragCoord.xy / uResolution.xy;
+                // Fix aspect ratio
+                vec2 p = (gl_FragCoord.xy * 2.0 - uResolution.xy) / min(uResolution.x, uResolution.y);
+                
+                // --- WAVY GRID BACKGROUND ---
+                // Distort space
+                vec2 gridUV = p;
+                
+                // Wave distortion 1
+                gridUV.x += sin(gridUV.y * 5.0 + uTime * 0.5) * 0.1;
+                gridUV.y += cos(gridUV.x * 5.0 + uTime * 0.3) * 0.1;
+                
+                // Rotating subtle distortion
+                float angle = uTime * 0.1;
+                mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+                vec2 rotUV = rot * gridUV;
+
+                // Create grid lines
+                float gridSize = 5.0; // Scale of grid
+                vec2 grid = fract(rotUV * gridSize) - 0.5;
+                float gridLine = 1.0 - smoothstep(0.0, 0.05, abs(grid.x)) * smoothstep(0.0, 0.05, abs(grid.y));
+                
+                // Alternative thick grid look like retro synthwave
+                float gX = abs(fract(rotUV.x * 4.0 + uTime * 0.2) - 0.5);
+                float gY = abs(fract(rotUV.y * 4.0 - uTime * 0.1) - 0.5);
+                float gridField = smoothstep(0.48, 0.5, gX) + smoothstep(0.48, 0.5, gY);
+                
+                vec3 bgColor = mix(vec3(0.05, 0.0, 0.1), vec3(0.0, 0.0, 0.2), uv.y * 0.5 + 0.5);
+                bgColor += vec3(gridField) * 0.15 * colorPurple; // Dim grid lines
+
+                // --- METABALL BLOBS ---
+                float d = 100.0; // Distance field accumulator
+                
+                // Define blob centers moving in loops
+                vec2 b1 = vec2(sin(uTime * 0.8), cos(uTime * 0.6)) * 0.5;
+                vec2 b2 = vec2(cos(uTime * 0.7 + 1.0), sin(uTime * 0.5)) * 0.6;
+                vec2 b3 = vec2(sin(uTime * 1.1 + 2.0), cos(uTime * 0.9)) * 0.4;
+                vec2 b4 = vec2(cos(uTime * 0.4 + 4.0), sin(uTime * 0.3)) * 0.7;
+                vec2 b5 = vec2(0.0, 0.0) + vec2(sin(uTime), cos(uTime)) * 0.2; // Center wobbler
+                
+                // Mouse interaction placeholder (if we passed mouse uniforms)
+                // b5 = uMouse; 
+
+                // Radius
+                float r = 0.4;
+                float blend = 0.5; // Blending factor
+
+                d = smin(sdCircle(p - b1, r), sdCircle(p - b2, r), blend);
+                d = smin(d, sdCircle(p - b3, r), blend);
+                d = smin(d, sdCircle(p - b4, r), blend);
+                
+                // Add a "negative" blob to create holes/complex shapes?
+                // d = smax(d, -sdCircle(p - b5, 0.2), blend); // Optional complexity
+
+                // --- COLORING ---
+                vec3 finalColor = bgColor;
+
+                // Metaball field
+                // Create a glowy edge and filled interior
+                // We map distance 'd' to color
+                
+                if (d < 0.1) {
+                    // Inside the blob
+                    // Create internal banding/gradients based on distance
+                    float val = smoothstep(0.1, -0.5, d); // 0 at edge, 1 at center
+                    
+                    // Plasma coloring inside blobs
+                    vec3 blobColor = mix(colorBlue, colorMagenta, val);
+                    blobColor = mix(blobColor, colorGold, smoothstep(0.8, 1.0, val));
+                    
+                    // Add some noise/texture to blobs
+                    float noiseVal = random(uv * 10.0 + uTime);
+                    blobColor += noiseVal * 0.05;
+
+                    finalColor = blobColor;
+                    
+                    // Rim light effect
+                    float rim = smoothstep(0.1, 0.0, d); 
+                    finalColor += rim * colorCyan * 0.5;
+                } else {
+                    // Outside/Glow
+                    float glow = exp(-d * 3.0);
+                    finalColor += glow * colorPurple * 0.5;
+                }
+
+                // --- SCANLINE / CHROMATIC ABERRATION (Simple) ---
+                // Shift channels slightly for aberration
+                float aber = 0.005 * sin(uTime * 5.0);
+                // We can't easily resample the full scene here without a second pass or computing everything 3 times
+                // So we just add a color tint based on position to fake it
+                finalColor.r += smoothstep(0.0, 1.0, abs(p.x)) * 0.1;
+                finalColor.b += smoothstep(0.0, 1.0, abs(p.y)) * 0.1;
+
+                // Output
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        // --- WebGL Boilerplate ---
+
+        function initShaderProgram(gl, vsSource, fsSource) {
+            const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+            const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+            const shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
+
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+                console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+                return null;
+            }
+
+            return shaderProgram;
+        }
+
+        function loadShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+        const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+
+        const programInfo = {
+            program: shaderProgram,
+            attribLocations: {
+                vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            },
+            uniformLocations: {
+                uTime: gl.getUniformLocation(shaderProgram, 'uTime'),
+                uResolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
+            },
+        };
+
+        // Define a full-screen quad
+        const positions = [
+            -1.0,  1.0,
+             1.0,  1.0,
+            -1.0, -1.0,
+             1.0, -1.0,
+        ];
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        // Resize handler
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Render Loop
+        function render(now) {
+            now *= 0.001; // Convert to seconds
+
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.useProgram(programInfo.program);
+
+            // Bind vertices
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+
+            // Set uniforms
+            gl.uniform1f(programInfo.uniformLocations.uTime, now);
+            gl.uniform2f(programInfo.uniformLocations.uResolution, canvas.width, canvas.height);
+
+            // Draw
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

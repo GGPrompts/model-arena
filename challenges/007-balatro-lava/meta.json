@@ -1,0 +1,13 @@
+{
+  "id": "007-balatro-lava",
+  "title": "Balatro Lava Lamp",
+  "date": "2026-01-27",
+  "prompt": "Create a Balatro-style hypnotic landing page in a single HTML file. Include: wavy distorted grid background that undulates with sine waves, floating metaball blobs that move organically and merge/separate smoothly when near each other, neon color palette (magenta, cyan, gold, purple on black). Big stylized title with rainbow color cycling effect. Simple menu below with glowing gold selection. Use canvas or WebGL for the metaball effect - the blobs should have soft gradients and actually blend together like a lava lamp when they touch. Make it psychedelic and mesmerizing. Dark background, CRT glow optional. Self-contained.",
+  "contestants": ["claude-opus-4.5", "gpt-5.2-codex", "gemini-native"],
+  "note": "Codex on high reasoning mode",
+  "answers": {
+    "a": "claude-opus-4.5",
+    "b": "gemini-native",
+    "c": "gpt-5.2-codex"
+  }
+}

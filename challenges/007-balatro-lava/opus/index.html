@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BALATRO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Bangers', cursive;
+        }
+
+        /* CRT Effect Overlay */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .crt-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        .crt-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                rgba(0, 0, 0, 0.3) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* Canvas layers */
+        #grid-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #metaball-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        /* Content */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        /* Title */
+        .title {
+            font-size: clamp(4rem, 15vw, 12rem);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: linear-gradient(
+                90deg,
+                #ff0080, #ff4d00, #ffcc00, #00ff88, #00ccff, #8800ff, #ff0080
+            );
+            background-size: 400% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow-shift 3s linear infinite;
+            text-shadow:
+                0 0 20px rgba(255, 0, 128, 0.5),
+                0 0 40px rgba(255, 0, 128, 0.3),
+                0 0 60px rgba(255, 0, 128, 0.2);
+            filter: drop-shadow(0 0 30px rgba(255, 0, 128, 0.4))
+                    drop-shadow(0 0 60px rgba(0, 204, 255, 0.3));
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .title::before {
+            content: 'BALATRO';
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: linear-gradient(
+                90deg,
+                #ff0080, #ff4d00, #ffcc00, #00ff88, #00ccff, #8800ff, #ff0080
+            );
+            background-size: 400% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow-shift 3s linear infinite;
+            filter: blur(8px);
+            opacity: 0.7;
+            z-index: -1;
+        }
+
+        @keyframes rainbow-shift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 400% 50%; }
+        }
+
+        /* Menu */
+        .menu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .menu-item {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            letter-spacing: 0.15em;
+            color: #666;
+            cursor: pointer;
+            padding: 0.5rem 2rem;
+            position: relative;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .menu-item::before,
+        .menu-item::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #ffd700, transparent);
+            transition: all 0.3s ease;
+        }
+
+        .menu-item::before {
+            right: 100%;
+        }
+
+        .menu-item::after {
+            left: 100%;
+        }
+
+        .menu-item:hover,
+        .menu-item.selected {
+            color: #ffd700;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4),
+                0 0 40px rgba(255, 215, 0, 0.2);
+        }
+
+        .menu-item:hover::before,
+        .menu-item:hover::after,
+        .menu-item.selected::before,
+        .menu-item.selected::after {
+            width: 40px;
+        }
+
+        .menu-item.selected {
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                text-shadow:
+                    0 0 10px rgba(255, 215, 0, 0.8),
+                    0 0 20px rgba(255, 215, 0, 0.6),
+                    0 0 30px rgba(255, 215, 0, 0.4),
+                    0 0 40px rgba(255, 215, 0, 0.2);
+            }
+            50% {
+                text-shadow:
+                    0 0 15px rgba(255, 215, 0, 1),
+                    0 0 30px rgba(255, 215, 0, 0.8),
+                    0 0 45px rgba(255, 215, 0, 0.6),
+                    0 0 60px rgba(255, 215, 0, 0.4);
+            }
+        }
+
+        /* Subtitle */
+        .subtitle {
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            color: #888;
+            letter-spacing: 0.3em;
+            margin-top: 3rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="grid-canvas"></canvas>
+    <canvas id="metaball-canvas"></canvas>
+
+    <div class="content">
+        <h1 class="title">BALATRO</h1>
+
+        <nav class="menu">
+            <div class="menu-item selected" data-index="0">Play</div>
+            <div class="menu-item" data-index="1">Continue</div>
+            <div class="menu-item" data-index="2">Collection</div>
+            <div class="menu-item" data-index="3">Options</div>
+            <div class="menu-item" data-index="4">Quit</div>
+        </nav>
+
+        <p class="subtitle">Press Enter to Select</p>
+    </div>
+
+    <div class="crt-overlay"></div>
+
+    <script>
+        // ============ WAVY GRID BACKGROUND ============
+        const gridCanvas = document.getElementById('grid-canvas');
+        const gridCtx = gridCanvas.getContext('2d');
+
+        function resizeGridCanvas() {
+            gridCanvas.width = window.innerWidth;
+            gridCanvas.height = window.innerHeight;
+        }
+        resizeGridCanvas();
+        window.addEventListener('resize', resizeGridCanvas);
+
+        function drawWavyGrid(time) {
+            gridCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+
+            const gridSize = 60;
+            const amplitude = 15;
+            const frequency = 0.02;
+            const timeScale = 0.001;
+
+            // Draw grid lines with wave distortion
+            gridCtx.strokeStyle = 'rgba(138, 43, 226, 0.15)';
+            gridCtx.lineWidth = 1;
+
+            // Vertical lines
+            for (let x = -gridSize; x < gridCanvas.width + gridSize; x += gridSize) {
+                gridCtx.beginPath();
+                for (let y = 0; y <= gridCanvas.height; y += 5) {
+                    const waveOffset = Math.sin(y * frequency + time * timeScale) * amplitude;
+                    const waveOffset2 = Math.sin(y * frequency * 0.5 + time * timeScale * 1.3) * amplitude * 0.5;
+                    const px = x + waveOffset + waveOffset2;
+
+                    if (y === 0) {
+                        gridCtx.moveTo(px, y);
+                    } else {
+                        gridCtx.lineTo(px, y);
+                    }
+                }
+                gridCtx.stroke();
+            }
+
+            // Horizontal lines
+            gridCtx.strokeStyle = 'rgba(0, 204, 255, 0.1)';
+            for (let y = -gridSize; y < gridCanvas.height + gridSize; y += gridSize) {
+                gridCtx.beginPath();
+                for (let x = 0; x <= gridCanvas.width; x += 5) {
+                    const waveOffset = Math.sin(x * frequency + time * timeScale * 0.8) * amplitude;
+                    const waveOffset2 = Math.cos(x * frequency * 0.7 + time * timeScale) * amplitude * 0.7;
+                    const py = y + waveOffset + waveOffset2;
+
+                    if (x === 0) {
+                        gridCtx.moveTo(x, py);
+                    } else {
+                        gridCtx.lineTo(x, py);
+                    }
+                }
+                gridCtx.stroke();
+            }
+        }
+
+        // ============ METABALL BLOBS ============
+        const metaCanvas = document.getElementById('metaball-canvas');
+        const metaCtx = metaCanvas.getContext('2d');
+
+        function resizeMetaCanvas() {
+            metaCanvas.width = window.innerWidth;
+            metaCanvas.height = window.innerHeight;
+        }
+        resizeMetaCanvas();
+        window.addEventListener('resize', resizeMetaCanvas);
+
+        // Blob class
+        class Blob {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.radius = 80 + Math.random() * 120;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.phase = Math.random() * Math.PI * 2;
+                this.colorIndex = Math.floor(Math.random() * 4);
+            }
+
+            update(time) {
+                // Organic movement with sine waves
+                const wobbleX = Math.sin(time * 0.001 + this.phase) * 0.5;
+                const wobbleY = Math.cos(time * 0.0012 + this.phase) * 0.5;
+
+                this.x += this.vx + wobbleX;
+                this.y += this.vy + wobbleY;
+
+                // Bounce off edges with padding
+                const padding = this.radius;
+                if (this.x < -padding) this.x = window.innerWidth + padding;
+                if (this.x > window.innerWidth + padding) this.x = -padding;
+                if (this.y < -padding) this.y = window.innerHeight + padding;
+                if (this.y > window.innerHeight + padding) this.y = -padding;
+            }
+        }
+
+        // Create blobs
+        const blobs = [];
+        const numBlobs = 8;
+        for (let i = 0; i < numBlobs; i++) {
+            blobs.push(new Blob());
+        }
+
+        // Color palette
+        const colors = [
+            { r: 255, g: 0, b: 128 },    // Magenta
+            { r: 0, g: 204, b: 255 },    // Cyan
+            { r: 255, g: 215, b: 0 },    // Gold
+            { r: 138, g: 43, b: 226 }    // Purple
+        ];
+
+        function drawMetaballs(time) {
+            const width = metaCanvas.width;
+            const height = metaCanvas.height;
+
+            // Create image data for pixel manipulation
+            const imageData = metaCtx.createImageData(width, height);
+            const data = imageData.data;
+
+            // Sample at lower resolution for performance
+            const scale = 4;
+            const scaledWidth = Math.ceil(width / scale);
+            const scaledHeight = Math.ceil(height / scale);
+
+            // Temporary buffer for scaled rendering
+            const buffer = new Float32Array(scaledWidth * scaledHeight * 4);
+
+            // Calculate metaball field
+            for (let py = 0; py < scaledHeight; py++) {
+                for (let px = 0; px < scaledWidth; px++) {
+                    const x = px * scale;
+                    const y = py * scale;
+
+                    let totalField = 0;
+                    let r = 0, g = 0, b = 0;
+
+                    for (const blob of blobs) {
+                        const dx = x - blob.x;
+                        const dy = y - blob.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        // Metaball field equation
+                        const field = (blob.radius * blob.radius) / (dist * dist + 1);
+
+                        if (field > 0.01) {
+                            const color = colors[blob.colorIndex];
+                            r += color.r * field;
+                            g += color.g * field;
+                            b += color.b * field;
+                            totalField += field;
+                        }
+                    }
+
+                    const idx = (py * scaledWidth + px) * 4;
+
+                    // Threshold for lava lamp effect
+                    const threshold = 1.0;
+                    if (totalField > threshold) {
+                        // Normalize colors
+                        const intensity = Math.min((totalField - threshold) * 2, 1);
+                        const glow = Math.pow(intensity, 0.5);
+
+                        buffer[idx] = (r / totalField) * glow;
+                        buffer[idx + 1] = (g / totalField) * glow;
+                        buffer[idx + 2] = (b / totalField) * glow;
+                        buffer[idx + 3] = intensity * 200;
+                    }
+                }
+            }
+
+            // Upscale with bilinear interpolation
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const sx = x / scale;
+                    const sy = y / scale;
+
+                    const x0 = Math.floor(sx);
+                    const y0 = Math.floor(sy);
+                    const x1 = Math.min(x0 + 1, scaledWidth - 1);
+                    const y1 = Math.min(y0 + 1, scaledHeight - 1);
+
+                    const fx = sx - x0;
+                    const fy = sy - y0;
+
+                    const idx00 = (y0 * scaledWidth + x0) * 4;
+                    const idx10 = (y0 * scaledWidth + x1) * 4;
+                    const idx01 = (y1 * scaledWidth + x0) * 4;
+                    const idx11 = (y1 * scaledWidth + x1) * 4;
+
+                    const idx = (y * width + x) * 4;
+
+                    for (let c = 0; c < 4; c++) {
+                        const v00 = buffer[idx00 + c];
+                        const v10 = buffer[idx10 + c];
+                        const v01 = buffer[idx01 + c];
+                        const v11 = buffer[idx11 + c];
+
+                        const v0 = v00 + (v10 - v00) * fx;
+                        const v1 = v01 + (v11 - v01) * fx;
+                        const v = v0 + (v1 - v0) * fy;
+
+                        data[idx + c] = Math.min(255, v);
+                    }
+                }
+            }
+
+            metaCtx.putImageData(imageData, 0, 0);
+
+            // Add glow effect using composite operations
+            metaCtx.save();
+            metaCtx.globalCompositeOperation = 'screen';
+            metaCtx.filter = 'blur(20px)';
+            metaCtx.globalAlpha = 0.5;
+            metaCtx.drawImage(metaCanvas, 0, 0);
+            metaCtx.restore();
+
+            metaCtx.save();
+            metaCtx.globalCompositeOperation = 'screen';
+            metaCtx.filter = 'blur(40px)';
+            metaCtx.globalAlpha = 0.3;
+            metaCtx.drawImage(metaCanvas, 0, 0);
+            metaCtx.restore();
+        }
+
+        // ============ MENU INTERACTION ============
+        const menuItems = document.querySelectorAll('.menu-item');
+        let selectedIndex = 0;
+
+        function updateSelection(index) {
+            menuItems.forEach((item, i) => {
+                item.classList.toggle('selected', i === index);
+            });
+            selectedIndex = index;
+        }
+
+        menuItems.forEach((item, index) => {
+            item.addEventListener('click', () => updateSelection(index));
+            item.addEventListener('mouseenter', () => updateSelection(index));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                updateSelection((selectedIndex - 1 + menuItems.length) % menuItems.length);
+            } else if (e.key === 'ArrowDown') {
+                updateSelection((selectedIndex + 1) % menuItems.length);
+            } else if (e.key === 'Enter') {
+                // Flash effect on selection
+                menuItems[selectedIndex].style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    menuItems[selectedIndex].style.transform = '';
+                }, 150);
+            }
+        });
+
+        // ============ ANIMATION LOOP ============
+        function animate(time) {
+            // Update blobs
+            for (const blob of blobs) {
+                blob.update(time);
+            }
+
+            // Draw layers
+            drawWavyGrid(time);
+            drawMetaballs(time);
+
+            requestAnimationFrame(animate);
+        }
+
+        animate(0);
+    </script>
+</body>
+</html>
