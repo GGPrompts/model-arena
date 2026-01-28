@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Colorful Bouncing Ball</title>
+  <style>
+    :root {
+      --bg-1: #0b0f2a;
+      --bg-2: #1a2a6c;
+      --bg-3: #fdbb2d;
+      --grid: rgba(255, 255, 255, 0.06);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Montserrat", "Futura", "Trebuchet MS", sans-serif;
+      color: #fff;
+      overflow: hidden;
+      background: radial-gradient(1200px 900px at 20% 20%, #2d7ff9 0%, #15204a 45%, #0b0f2a 100%);
+    }
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(900px 700px at 80% 20%, #ff6f91 0%, rgba(255, 111, 145, 0.0) 60%),
+        radial-gradient(700px 600px at 20% 80%, #38ef7d 0%, rgba(56, 239, 125, 0.0) 60%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2) 55%, var(--bg-3));
+    }
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    .label {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="label">Color Bounce</div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const state = {
+      width: 0,
+      height: 0,
+      ball: {
+        x: 120,
+        y: 120,
+        vx: 240,
+        vy: 180,
+        r: 36,
+        hue: 0,
+      },
+      last: performance.now(),
+    };
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      state.width = window.innerWidth;
+      state.height = window.innerHeight;
+      canvas.width = Math.floor(state.width * dpr);
+      canvas.height = Math.floor(state.height * dpr);
+      canvas.style.width = `${state.width}px`;
+      canvas.style.height = `${state.height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function drawBackground() {
+      const grad = ctx.createRadialGradient(
+        state.width * 0.5,
+        state.height * 0.4,
+        80,
+        state.width * 0.5,
+        state.height * 0.4,
+        Math.max(state.width, state.height)
+      );
+      grad.addColorStop(0, "rgba(255,255,255,0.08)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, state.width, state.height);
+    }
+
+    function drawBall() {
+      const { x, y, r, hue } = state.ball;
+      const gradient = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.2, x, y, r);
+      gradient.addColorStop(0, `hsl(${hue}, 100%, 75%)`);
+      gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 90%, 45%)`);
+
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.fill();
+
+      ctx.shadowColor = `hsla(${hue}, 100%, 60%, 0.6)`;
+      ctx.shadowBlur = 20;
+      ctx.strokeStyle = `hsla(${hue + 30}, 100%, 70%, 0.7)`;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    function update(delta) {
+      const ball = state.ball;
+      ball.x += ball.vx * delta;
+      ball.y += ball.vy * delta;
+      ball.hue = (ball.hue + 60 * delta) % 360;
+
+      if (ball.x - ball.r <= 0) {
+        ball.x = ball.r;
+        ball.vx *= -1;
+      } else if (ball.x + ball.r >= state.width) {
+        ball.x = state.width - ball.r;
+        ball.vx *= -1;
+      }
+
+      if (ball.y - ball.r <= 0) {
+        ball.y = ball.r;
+        ball.vy *= -1;
+      } else if (ball.y + ball.r >= state.height) {
+        ball.y = state.height - ball.r;
+        ball.vy *= -1;
+      }
+    }
+
+    function frame(now) {
+      const delta = Math.min((now - state.last) / 1000, 0.032);
+      state.last = now;
+
+      ctx.clearRect(0, 0, state.width, state.height);
+      drawBackground();
+      update(delta);
+      drawBall();
+
+      requestAnimationFrame(frame);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

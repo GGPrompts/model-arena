@@ -1,0 +1,12 @@
+{
+  "id": "008-test-arena-skill",
+  "title": "Bouncing Ball (Arena Skill Test)",
+  "date": "2026-01-27",
+  "prompt": "Create a simple bouncing ball animation in a single index.html file. Self-contained, inline CSS/JS, no external dependencies. Make it colorful.",
+  "contestants": ["codex", "copilot-gemini", "gemini"],
+  "answers": {
+    "a": "codex",
+    "b": "copilot-gemini",
+    "c": "gemini"
+  }
+}
