@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Infinite Wormhole Zoom</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050011;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(100, 255, 218, 0.6);
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(100, 255, 218, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">Target: Singularity // Distance: ∞</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for no transparency on base
+        
+        let width, height, cx, cy;
+        let time = 0;
+        
+        // Configuration
+        const ZOOM_SPEED = 0.005; 
+        const ROTATION_SPEED = 0.002;
+        const LAYERS = 20; // How many recursive layers to draw
+        const SCALE_FACTOR = 0.25; // How much smaller the next layer is (1/4th size)
+        
+        // Theme palette
+        const colors = [
+            '#0b0014', // Deepest void
+            '#240046', // Dark Purple
+            '#3c096c', // Purple
+            '#5a189a', // Violet
+            '#7b2cbf', // Light Violet
+            '#9d4edd', // Orchid
+            '#c77dff', // Mauve
+            '#e0aaff'  // Lavender
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cx = width / 2;
+            cy = height / 2;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Procedural generation of the "World"
+        // We draw a frame that has a hole in the center.
+        function drawLayer(ctx, scale, layerIndex, globalTime) {
+            const size = Math.max(width, height) * 1.5; // Ensure coverage
+            const holeSize = size * SCALE_FACTOR; 
+            
+            // We want to draw the "surroundings" but leave the center clear for the next layer.
+            // Using a path for the "donut" shape
+            ctx.beginPath();
+            // Outer rectangle (huge)
+            ctx.rect(-size/2, -size/2, size, size);
+            // Inner rectangle (hole) - define counter-clockwise to create a hole in fill
+            ctx.rect(holeSize/2, -holeSize/2, -holeSize, holeSize); 
+            
+            ctx.fillStyle = colors[layerIndex % colors.length];
+            
+            // Dynamic lighting/shading
+            // Let's make it look like a tunnel with gradients
+            const gradient = ctx.createRadialGradient(0, 0, holeSize/2, 0, 0, size/2);
+            const c1 = colors[(layerIndex) % colors.length];
+            const c2 = colors[(layerIndex + 1) % colors.length];
+            const c3 = colors[(layerIndex + 2) % colors.length];
+            
+            gradient.addColorStop(0, c1);
+            gradient.addColorStop(0.5, c2);
+            gradient.addColorStop(1, c3);
+            ctx.fillStyle = gradient;
+            
+            ctx.fill();
+            ctx.clip(); // Clip to the donut shape so we can draw details on it without spilling into the hole or outside
+            
+            // -- DETAIL DRAWING START --
+            
+            // 1. Grid Lines
+            ctx.strokeStyle = `rgba(100, 255, 218, ${0.1 + (Math.sin(globalTime + layerIndex)*0.05)})`;
+            ctx.lineWidth = 2;
+            const gridSize = size / 20;
+            
+            ctx.beginPath();
+            // Radial lines
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2 + globalTime * 0.1;
+                ctx.moveTo(Math.cos(angle) * holeSize/1.5, Math.sin(angle) * holeSize/1.5);
+                ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
+            }
+            ctx.stroke();
+
+            // 2. Geometric Floating Shapes (The "Content")
+            const numShapes = 8;
+            for (let i = 0; i < numShapes; i++) {
+                const angle = (i / numShapes) * Math.PI * 2 + (globalTime * 0.2) + (layerIndex * 0.5);
+                const dist = holeSize * 1.5 + Math.sin(globalTime * 2 + i) * (holeSize * 0.2);
+                
+                ctx.save();
+                ctx.translate(Math.cos(angle) * dist, Math.sin(angle) * dist);
+                ctx.rotate(angle + globalTime);
+                
+                // Neon glow
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#4cc9f0';
+                ctx.fillStyle = '#4cc9f0';
+                
+                // Draw a shape (e.g., triangle)
+                ctx.beginPath();
+                ctx.moveTo(20, 0);
+                ctx.lineTo(-10, 10);
+                ctx.lineTo(-10, -10);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // 3. Circuitry / Tech patterns on the walls
+            ctx.strokeStyle = `rgba(247, 37, 133, ${0.3})`;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            const circuitOffset = (layerIndex * 100);
+            ctx.arc(0, 0, holeSize * 1.2 + Math.sin(globalTime + layerIndex)*50, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // -- DETAIL DRAWING END --
+            
+            // Remove clip for next operations (though we are restoring state in the main loop, so strictly not needed if we didn't recurse)
+        }
+
+        function animate() {
+            time += 1;
+            
+            // Reset canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // The "Infinite Zoom" logic:
+            // We have a cycle. The zoomFactor goes from 1 down to SCALE_FACTOR.
+            // As soon as it hits SCALE_FACTOR, it effectively looks like the *next* layer, 
+            // so we reset it to 1.
+            
+            // However, visually, we want to zoom IN. So things get BIGGER.
+            // So zoom goes from SCALE_FACTOR to 1? 
+            // If scale goes 0.25 -> 1.0. 
+            // The layer at 0.25 grows to 1.0.
+            // The layer at 0.0625 grows to 0.25.
+            
+            // To make it linear loop:
+            // globalZoom increases forever.
+            // effective scale = (globalZoom % 1) ... transformed.
+            
+            const loopTime = 300; // frames per loop
+            const progress = (time % loopTime) / loopTime; // 0.0 to 1.0
+            
+            // Logarithmic zoom for constant visual speed
+            // We want to scale from SCALE_FACTOR to 1
+            // scale = SCALE_FACTOR * (1/SCALE_FACTOR) ^ progress
+            // simplified: scale = SCALE_FACTOR ^ (1 - progress)
+            
+            // Let's drive it by a continuous baseScale that multiplies everything.
+            // Actually, simplest way:
+            // Draw N layers.
+            // Layer i has scale:  base * (SCALE_FACTOR ^ i)
+            // We animate 'base' from 1 up to (1/SCALE_FACTOR). When it hits top, reset to 1.
+            
+            const cycleScale = Math.pow(1/SCALE_FACTOR, progress); // Grows from 1 to 4
+            
+            // We draw from largest (closest) to smallest (farthest) 
+            // BUT Painter's algorithm says draw farthest first so close ones cover it.
+            // EXCEPT our layers are "donuts" with holes. 
+            // So we can draw largest first (outer ring), then the next largest inside the hole, etc.
+            // This prevents "flicker" of the deep background clearing the front.
+            
+            // Let's try drawing from Outside (Largest) -> In (Smallest)
+            
+            // We need to render enough layers to cover the screen and enough deep ones to look infinite.
+            // Start layer index:
+            // We need a layer that is effectively "behind the camera" to ensure no clipping?
+            // Since we clamp rotation and center, we just need the biggest layer to cover the corners.
+            
+            for (let i = -1; i < LAYERS; i++) {
+                ctx.save();
+                
+                ctx.translate(cx, cy);
+                
+                // Calculate scale for this layer
+                // Layer 0 starts at scale 1 * cycleScale. 
+                // Layer 1 starts at scale 0.25 * cycleScale.
+                let currentScale = Math.pow(SCALE_FACTOR, i) * cycleScale;
+                
+                // Global Rotation + Layer Rotation (to make it twist)
+                let rotation = (time * ROTATION_SPEED) + (i * 0.2); 
+                
+                ctx.scale(currentScale, currentScale);
+                ctx.rotate(rotation);
+                
+                // Optimization: Don't draw if too small to see (sub-pixel)
+                if (currentScale * Math.max(width, height) > 0.5) {
+                    // Pass 'i' to vary colors/shapes
+                    // We need a logical index that doesn't jump when the loop resets.
+                    // The loop resets when i shifts. 
+                    // To keep continuity, the visual properties must depend on the *absolute* depth, not the loop index.
+                    // But 'i' is shifting relative to the viewer? 
+                    // No, 'i' is the discrete step. 
+                    // When progress wraps 1->0, cycleScale jumps 4->1.
+                    // Layer 'i' (Scale 4) becomes Layer 'i-1' (Scale 4 * 0.25 = 1).
+                    // So visually, the layer that was at index 0 (Scale 4) is removed/clipped, 
+                    // and the layer at index 1 (Scale 1) takes its place as the new "outer" layer.
+                    // So the visual parameters (color, shape) must move with the layer.
+                    // So we should base visual params on (i - Math.floor(time/loopTime))? 
+                    
+                    // Actually, simpler: Just shift colors by 1 every loop cycle.
+                    let colorShift = Math.floor(time / loopTime);
+                    drawLayer(ctx, currentScale, i + colorShift, time * 0.01);
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw a "Singularity" in the very center to hide the pixel limit
+            // (The loop stops at LAYERS, but there's a tiny hole left)
+            /*
+            ctx.save();
+            ctx.translate(cx, cy);
+            let smallestScale = Math.pow(SCALE_FACTOR, LAYERS) * cycleScale;
+            ctx.scale(smallestScale, smallestScale);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-100, -100, 200, 200); // Bright light at the end
+            ctx.restore();
+            */
+           
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>
