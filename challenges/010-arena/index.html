@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RETRO TYPING ARENA - Effects Demo</title>
+  <link rel="stylesheet" href="effects.css">
+  <style>
+    /* Demo-specific styles */
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      color: #00ff41;
+      overflow: hidden;
+    }
+
+    /* CRT bezel frame */
+    .crt-bezel {
+      background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%);
+      padding: 30px 40px 50px;
+      border-radius: 30px;
+      box-shadow:
+        0 0 0 2px #333,
+        0 0 0 5px #1a1a1a,
+        0 0 50px rgba(0, 0, 0, 0.8),
+        inset 0 0 100px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Main game container */
+    #game-container {
+      width: 800px;
+      height: 500px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HUD Section */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 1.2em;
+    }
+
+    .hud-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-label {
+      color: #666;
+      font-size: 0.8em;
+    }
+
+    .hud-value {
+      font-weight: bold;
+      min-width: 80px;
+    }
+
+    .wpm-counter {
+      font-size: 1.5em;
+    }
+
+    .combo-counter {
+      font-size: 1.8em;
+      color: var(--crt-amber);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      margin: 10px 0 20px;
+    }
+
+    /* Game text area */
+    .game-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-size: 2em;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .game-text .word {
+      display: inline-block;
+      margin: 0 0.3em;
+    }
+
+    .game-text .char {
+      display: inline-block;
+      position: relative;
+    }
+
+    .char.pending {
+      color: #444;
+    }
+
+    .char.correct {
+      color: var(--crt-green);
+    }
+
+    .char.error {
+      color: var(--crt-red);
+      text-decoration: underline;
+    }
+
+    /* Control panel */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .btn {
+      background: rgba(0, 255, 65, 0.1);
+      border: 1px solid var(--crt-green);
+      color: var(--crt-green);
+      padding: 12px 15px;
+      font-family: inherit;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.1s;
+      text-transform: uppercase;
+    }
+
+    .btn:hover {
+      background: rgba(0, 255, 65, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn.danger {
+      border-color: var(--crt-red);
+      color: var(--crt-red);
+    }
+
+    .btn.danger:hover {
+      background: rgba(255, 0, 64, 0.2);
+      box-shadow: 0 0 15px rgba(255, 0, 64, 0.3);
+    }
+
+    .btn.warning {
+      border-color: var(--crt-amber);
+      color: var(--crt-amber);
+    }
+
+    .btn.warning:hover {
+      background: rgba(255, 176, 0, 0.2);
+      box-shadow: 0 0 15px rgba(255, 176, 0, 0.3);
+    }
+
+    .btn.special {
+      border-color: var(--crt-magenta);
+      color: var(--crt-magenta);
+    }
+
+    .btn.special:hover {
+      background: rgba(255, 0, 255, 0.2);
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+    }
+
+    /* Instructions */
+    .instructions {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: #555;
+      text-align: center;
+    }
+
+    .instructions kbd {
+      background: #222;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-bezel">
+    <div id="game-container" class="crt-container">
+      <!-- HUD -->
+      <div class="hud">
+        <div class="hud-item">
+          <span class="hud-label">WPM</span>
+          <span class="hud-value wpm-counter" id="wpm">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">SCORE</span>
+          <span class="hud-value score-display" id="score">000000</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">COMBO</span>
+          <span class="hud-value combo-counter" id="combo">0</span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress" style="width: 0%"></div>
+      </div>
+
+      <!-- Game Text -->
+      <div class="game-text display-text" id="text-display">
+        <span class="word" data-word="the">
+          <span class="char correct" data-char="t">t</span><span class="char correct" data-char="h">h</span><span class="char current" data-char="e">e</span>
+        </span>
+        <span class="word" data-word="quick">
+          <span class="char pending" data-char="q">q</span><span class="char pending" data-char="u">u</span><span class="char pending" data-char="i">i</span><span class="char pending" data-char="c">c</span><span class="char pending" data-char="k">k</span>
+        </span>
+        <span class="word" data-word="brown">
+          <span class="char pending" data-char="b">b</span><span class="char pending" data-char="r">r</span><span class="char pending" data-char="o">o</span><span class="char pending" data-char="w">w</span><span class="char pending" data-char="n">n</span>
+        </span>
+        <span class="word" data-word="fox">
+          <span class="char pending" data-char="f">f</span><span class="char pending" data-char="o">o</span><span class="char pending" data-char="x">x</span>
+        </span>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn" onclick="demo.shake(3)">Shake Light</button>
+        <button class="btn" onclick="demo.shake(6)">Shake Medium</button>
+        <button class="btn danger" onclick="demo.shake(10)">Shake VIOLENT</button>
+        <button class="btn" onclick="demo.glitch(300)">Glitch</button>
+
+        <button class="btn" onclick="demo.typeCorrect()">Type Correct</button>
+        <button class="btn danger" onclick="demo.typeError()">Type Error</button>
+        <button class="btn" onclick="demo.explodeWord()">Explode Word</button>
+        <button class="btn" onclick="demo.scanlineBurst()">Scanline Burst</button>
+
+        <button class="btn warning" onclick="demo.addCombo()">+10 Combo</button>
+        <button class="btn special" onclick="demo.feverMode()">FEVER MODE</button>
+        <button class="btn" onclick="demo.wpmMilestone()">WPM Milestone</button>
+        <button class="btn warning" onclick="demo.addScore()">+1000 Score</button>
+
+        <button class="btn special" onclick="demo.levelTransition()">Level Transition</button>
+        <button class="btn" onclick="demo.corrupt()">Corrupt Text</button>
+        <button class="btn" onclick="demo.rgbSplit()">RGB Split</button>
+        <button class="btn danger" onclick="demo.reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <p>Press buttons to trigger effects or use keyboard: <kbd>1-4</kbd> shakes, <kbd>G</kbd> glitch, <kbd>F</kbd> fever, <kbd>L</kbd> level</p>
+  </div>
+
+  <script type="module">
+    import Effects from './effects.js';
+
+    const container = document.getElementById('game-container');
+    const effects = Effects.initEffects(container);
+
+    // State
+    let combo = 0;
+    let score = 0;
+    let wpm = 0;
+    let progress = 0;
+    let currentCharIndex = 2; // Starting at 'e' in 'the'
+
+    // Elements
+    const comboEl = document.getElementById('combo');
+    const scoreEl = document.getElementById('score');
+    const wpmEl = document.getElementById('wpm');
+    const progressEl = document.getElementById('progress');
+    const textDisplay = document.getElementById('text-display');
+
+    // Get all characters
+    const getAllChars = () => [...textDisplay.querySelectorAll('.char')];
+
+    // Demo functions
+    window.demo = {
+      shake(intensity) {
+        effects.triggerScreenShake(intensity);
+      },
+
+      glitch(duration) {
+        effects.triggerGlitch(duration);
+      },
+
+      typeCorrect() {
+        const chars = getAllChars();
+        if (currentCharIndex < chars.length) {
+          const current = chars[currentCharIndex];
+          const next = chars[currentCharIndex + 1];
+
+          current.classList.remove('current', 'pending');
+          current.classList.add('correct');
+          effects.animateCharacter(current, 'correct');
+
+          if (next) {
+            next.classList.remove('pending');
+            next.classList.add('current');
+            effects.animateCharacter(next, 'current');
+          }
+
+          currentCharIndex++;
+          combo++;
+          comboEl.textContent = combo;
+          effects.showComboEffect(combo);
+
+          // Update progress
+          progress = (currentCharIndex / chars.length) * 100;
+          effects.animateProgressBar(progressEl, progress);
+
+          // Check for word completion
+          const word = current.closest('.word');
+          const wordChars = [...word.querySelectorAll('.char')];
+          if (wordChars.every(c => c.classList.contains('correct'))) {
+            effects.createParticleExplosion(word);
+          }
+        }
+      },
+
+      typeError() {
+        const chars = getAllChars();
+        if (currentCharIndex < chars.length) {
+          const current = chars[currentCharIndex];
+          current.classList.add('error');
+          effects.animateCharacter(current, 'error');
+
+          // Reset combo
+          combo = 0;
+          comboEl.textContent = combo;
+          effects.showComboEffect(combo);
+        }
+      },
+
+      explodeWord() {
+        const words = textDisplay.querySelectorAll('.word');
+        const randomWord = words[Math.floor(Math.random() * words.length)];
+        effects.createParticleExplosion(randomWord, {
+          particleCount: 20,
+          spread: 200
+        });
+      },
+
+      scanlineBurst() {
+        effects.triggerScanlineBurst();
+      },
+
+      addCombo() {
+        combo += 10;
+        comboEl.textContent = combo;
+        effects.showComboEffect(combo);
+      },
+
+      feverMode() {
+        effects.triggerFeverMode();
+      },
+
+      wpmMilestone() {
+        wpm += 10;
+        wpmEl.textContent = wpm;
+        effects.animateWPMMilestone(wpmEl, wpm);
+      },
+
+      addScore() {
+        const oldScore = score;
+        score += 1000;
+        effects.animateScoreSpin(scoreEl, oldScore, score);
+      },
+
+      levelTransition() {
+        const level = Math.floor(Math.random() * 10) + 1;
+        effects.playLevelTransition(level, () => {
+          console.log('Level transition complete!');
+        });
+      },
+
+      corrupt() {
+        const chars = getAllChars();
+        const randomChars = chars.sort(() => Math.random() - 0.5).slice(0, 5);
+        randomChars.forEach((char, i) => {
+          setTimeout(() => effects.corruptCharacter(char, 400), i * 100);
+        });
+      },
+
+      rgbSplit() {
+        effects.triggerRGBSplit(true);
+      },
+
+      reset() {
+        combo = 0;
+        score = 0;
+        wpm = 0;
+        progress = 0;
+        currentCharIndex = 2;
+
+        comboEl.textContent = '0';
+        scoreEl.textContent = '000000';
+        wpmEl.textContent = '0';
+        progressEl.style.width = '0%';
+
+        const chars = getAllChars();
+        chars.forEach((char, i) => {
+          char.classList.remove('correct', 'error', 'current', 'char-typed', 'char-error');
+          if (i < 2) {
+            char.classList.add('correct');
+          } else if (i === 2) {
+            char.classList.add('current');
+          } else {
+            char.classList.add('pending');
+          }
+        });
+
+        effects.cleanup();
+        Effects.initEffects(container);
+      }
+    };
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case '1': demo.shake(2); break;
+        case '2': demo.shake(5); break;
+        case '3': demo.shake(8); break;
+        case '4': demo.shake(10); break;
+        case 'g': demo.glitch(300); break;
+        case 'f': demo.feverMode(); break;
+        case 'l': demo.levelTransition(); break;
+        case 'c': demo.typeCorrect(); break;
+        case 'e': demo.typeError(); break;
+        case 'w': demo.explodeWord(); break;
+        case 's': demo.scanlineBurst(); break;
+        case 'r': demo.rgbSplit(); break;
+      }
+    });
+
+    // Auto intensity ramp for demo
+    let intensityDir = 0.01;
+    let intensity = 0;
+    setInterval(() => {
+      intensity += intensityDir;
+      if (intensity >= 1 || intensity <= 0) intensityDir *= -1;
+      effects.updateIntensity(intensity);
+    }, 100);
+
+    console.log('RETRO TYPING ARENA - Effects Demo Loaded');
+    console.log('Press buttons or use keyboard shortcuts to test effects!');
+  </script>
+</body>
+</html>

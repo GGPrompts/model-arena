@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Typing Audio System - Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0f;
+      color: #00ff88;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff8866;
+      margin-bottom: 0.5rem;
+      animation: flicker 3s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.8; }
+      94% { opacity: 1; }
+      96% { opacity: 0.9; }
+      97% { opacity: 1; }
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .init-banner {
+      text-align: center;
+      padding: 2rem;
+      background: linear-gradient(180deg, #1a1a2e 0%, #0a0a15 100%);
+      border: 2px solid #00ff88;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 30px #00ff8833;
+    }
+
+    .init-banner h2 {
+      margin-bottom: 1rem;
+    }
+
+    #initBtn {
+      font-family: inherit;
+      font-size: 1.5rem;
+      padding: 1rem 3rem;
+      background: #00ff88;
+      color: #0a0a0f;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: bold;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px #00ff8866;
+    }
+
+    #initBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 40px #00ff88;
+    }
+
+    #initBtn:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .controls {
+      display: none;
+      gap: 2rem;
+      flex-direction: column;
+    }
+
+    .controls.active {
+      display: flex;
+    }
+
+    .section {
+      background: linear-gradient(180deg, #1a1a2e 0%, #12121f 100%);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .section h3 {
+      color: #ff6b6b;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.8rem 1.2rem;
+      background: #1a1a2e;
+      color: #00ff88;
+      border: 1px solid #00ff88;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-transform: uppercase;
+    }
+
+    button:hover {
+      background: #00ff88;
+      color: #0a0a0f;
+      box-shadow: 0 0 15px #00ff8866;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    button.error-btn {
+      border-color: #ff4444;
+      color: #ff4444;
+    }
+
+    button.error-btn:hover {
+      background: #ff4444;
+      color: #0a0a0f;
+      box-shadow: 0 0 15px #ff444466;
+    }
+
+    button.success-btn {
+      border-color: #44ff44;
+      color: #44ff44;
+    }
+
+    button.success-btn:hover {
+      background: #44ff44;
+      color: #0a0a0f;
+      box-shadow: 0 0 15px #44ff4466;
+    }
+
+    button.epic-btn {
+      border-color: #ffaa00;
+      color: #ffaa00;
+    }
+
+    button.epic-btn:hover {
+      background: #ffaa00;
+      color: #0a0a0f;
+      box-shadow: 0 0 15px #ffaa0066;
+    }
+
+    button.fever-btn {
+      border-color: #ff00ff;
+      color: #ff00ff;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 5px #ff00ff33; }
+      50% { box-shadow: 0 0 20px #ff00ff66; }
+    }
+
+    button.fever-btn:hover {
+      background: #ff00ff;
+      color: #0a0a0f;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slider-row label {
+      min-width: 100px;
+      color: #888;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      accent-color: #00ff88;
+    }
+
+    .slider-row .value {
+      min-width: 60px;
+      text-align: right;
+      color: #00ff88;
+      font-weight: bold;
+    }
+
+    .typing-area {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #0a0a15;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
+    .typing-area p {
+      color: #666;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    #typingInput {
+      width: 100%;
+      padding: 1rem;
+      font-family: inherit;
+      font-size: 1.2rem;
+      background: #000;
+      border: 2px solid #00ff88;
+      border-radius: 4px;
+      color: #00ff88;
+      outline: none;
+    }
+
+    #typingInput:focus {
+      box-shadow: 0 0 20px #00ff8844;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #0a0a15;
+      border-radius: 4px;
+    }
+
+    .status-item {
+      text-align: center;
+    }
+
+    .status-item .label {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .status-item .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    #wpmDisplay { color: #00ff88; }
+    #comboDisplay { color: #ffaa00; }
+    #feverDisplay { color: #ff00ff; }
+
+    .toggle-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .toggle-btn {
+      position: relative;
+    }
+
+    .toggle-btn.active {
+      background: #00ff88;
+      color: #0a0a0f;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: #444;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>RETRO AUDIO SYSTEM</h1>
+  <p class="subtitle">Theatrical Sound Design for Typing Games</p>
+
+  <div class="init-banner" id="initBanner">
+    <h2>Click to Initialize Audio</h2>
+    <p style="color: #666; margin-bottom: 1rem;">Web Audio requires user interaction to start</p>
+    <button id="initBtn">POWER ON</button>
+  </div>
+
+  <div class="controls" id="controls">
+    <!-- Keystroke Sounds -->
+    <section class="section">
+      <h3>Keystroke Sounds</h3>
+      <div class="button-grid">
+        <button onclick="audio.playKeystroke(true)" class="success-btn">Correct Keystroke</button>
+        <button onclick="audio.playKeystroke(false)" class="error-btn">Wrong Keystroke</button>
+        <button onclick="audio.playError()" class="error-btn">Error Sound</button>
+      </div>
+      <div class="typing-area">
+        <p>Type here to hear keystrokes (correct keys play good sound, space = error):</p>
+        <input type="text" id="typingInput" placeholder="Start typing..." autocomplete="off">
+      </div>
+    </section>
+
+    <!-- Word Complete & Combos -->
+    <section class="section">
+      <h3>Word Complete & Combo Fanfares</h3>
+      <div class="button-grid">
+        <button onclick="audio.playWordComplete(1)">Word Complete (1x)</button>
+        <button onclick="audio.playWordComplete(5)" class="epic-btn">Word + 5x Combo</button>
+        <button onclick="audio.playWordComplete(10)" class="epic-btn">Word + 10x Combo</button>
+        <button onclick="audio.playWordComplete(25)" class="epic-btn">Word + 25x Combo</button>
+        <button onclick="audio.playWordComplete(50)" class="epic-btn">Word + 50x MEGA</button>
+      </div>
+    </section>
+
+    <!-- Speed Milestones -->
+    <section class="section">
+      <h3>Speed Milestones</h3>
+      <div class="button-grid">
+        <button onclick="audio.playSpeedMilestone(30)">30 WPM Whoosh</button>
+        <button onclick="audio.playSpeedMilestone(60)">60 WPM Whoosh</button>
+        <button onclick="audio.playSpeedMilestone(90)">90 WPM Whoosh</button>
+        <button onclick="audio.playSpeedMilestone(120)">120 WPM Whoosh</button>
+      </div>
+    </section>
+
+    <!-- Level Events -->
+    <section class="section">
+      <h3>Level Events</h3>
+      <div class="button-grid">
+        <button onclick="audio.playLevelComplete()" class="success-btn">LEVEL COMPLETE</button>
+        <button onclick="audio.playLevelFail()" class="error-btn">LEVEL FAIL</button>
+      </div>
+    </section>
+
+    <!-- Fever Mode -->
+    <section class="section">
+      <h3>Fever Mode</h3>
+      <div class="button-grid">
+        <button onclick="audio.triggerFeverMode()" class="fever-btn">ACTIVATE FEVER MODE</button>
+        <button onclick="audio.deactivateFeverMode()">Deactivate Fever</button>
+      </div>
+    </section>
+
+    <!-- Background Systems -->
+    <section class="section">
+      <h3>Background Systems</h3>
+      <div class="toggle-group">
+        <button id="musicToggle" onclick="toggleMusic()">Background Music: OFF</button>
+      </div>
+    </section>
+
+    <!-- Intensity Controls -->
+    <section class="section">
+      <h3>Intensity Simulation</h3>
+      <div class="slider-group">
+        <div class="slider-row">
+          <label>WPM:</label>
+          <input type="range" id="wpmSlider" min="0" max="150" value="0" oninput="updateIntensity()">
+          <span class="value" id="wpmValue">0</span>
+        </div>
+        <div class="slider-row">
+          <label>Combo:</label>
+          <input type="range" id="comboSlider" min="0" max="50" value="0" oninput="updateIntensity()">
+          <span class="value" id="comboValue">0</span>
+        </div>
+        <div class="slider-row">
+          <label>Volume:</label>
+          <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="updateVolume()">
+          <span class="value" id="volumeValue">70%</span>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="label">WPM</div>
+          <div class="value" id="wpmDisplay">0</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Combo</div>
+          <div class="value" id="comboDisplay">0x</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Fever</div>
+          <div class="value" id="feverDisplay">OFF</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p>Built with Web Audio API | Mechanical Keyboard ASMR meets Arcade Glory</p>
+  </footer>
+
+  <script type="module">
+    import * as AudioSystem from './audio-system.js';
+
+    // Make it globally available for onclick handlers
+    window.audio = AudioSystem;
+
+    let musicPlaying = false;
+    let lastWPM = 0;
+
+    // Initialize button
+    document.getElementById('initBtn').addEventListener('click', async () => {
+      await AudioSystem.initAudio();
+      document.getElementById('initBtn').textContent = 'SYSTEM ONLINE';
+      document.getElementById('initBtn').disabled = true;
+      document.getElementById('controls').classList.add('active');
+
+      // Play a welcome sound
+      setTimeout(() => AudioSystem.playWordComplete(1), 300);
+    });
+
+    // Typing input handler
+    const typingInput = document.getElementById('typingInput');
+    typingInput.addEventListener('keydown', (e) => {
+      // Space triggers error, everything else is correct
+      const isError = e.key === ' ' || e.key === 'Backspace';
+      AudioSystem.playKeystroke(!isError);
+    });
+
+    // Music toggle
+    window.toggleMusic = function() {
+      musicPlaying = !musicPlaying;
+      const btn = document.getElementById('musicToggle');
+
+      if (musicPlaying) {
+        AudioSystem.startBackgroundMusic();
+        btn.textContent = 'Background Music: ON';
+        btn.classList.add('active');
+      } else {
+        AudioSystem.stopBackgroundMusic();
+        btn.textContent = 'Background Music: OFF';
+        btn.classList.remove('active');
+      }
+    };
+
+    // Intensity sliders
+    window.updateIntensity = function() {
+      const wpm = parseInt(document.getElementById('wpmSlider').value);
+      const combo = parseInt(document.getElementById('comboSlider').value);
+
+      document.getElementById('wpmValue').textContent = wpm;
+      document.getElementById('comboValue').textContent = combo;
+      document.getElementById('wpmDisplay').textContent = wpm;
+      document.getElementById('comboDisplay').textContent = combo + 'x';
+
+      // Check for fever mode threshold
+      if (combo >= 20) {
+        document.getElementById('feverDisplay').textContent = 'ON';
+        document.getElementById('feverDisplay').style.textShadow = '0 0 10px #ff00ff';
+      } else {
+        document.getElementById('feverDisplay').textContent = 'OFF';
+        document.getElementById('feverDisplay').style.textShadow = 'none';
+      }
+
+      AudioSystem.setIntensity(wpm, combo);
+    };
+
+    // Volume slider
+    window.updateVolume = function() {
+      const volume = parseInt(document.getElementById('volumeSlider').value);
+      document.getElementById('volumeValue').textContent = volume + '%';
+      AudioSystem.setVolume(volume / 100);
+    };
+
+    // Keyboard shortcuts for quick testing
+    document.addEventListener('keydown', (e) => {
+      // Only if not in typing input
+      if (document.activeElement === typingInput) return;
+
+      switch(e.key) {
+        case '1': AudioSystem.playKeystroke(true); break;
+        case '2': AudioSystem.playKeystroke(false); break;
+        case '3': AudioSystem.playWordComplete(1); break;
+        case '4': AudioSystem.playWordComplete(10); break;
+        case '5': AudioSystem.playLevelComplete(); break;
+        case '6': AudioSystem.playLevelFail(); break;
+        case 'f': AudioSystem.triggerFeverMode(); break;
+      }
+    });
+  </script>
+</body>
+</html>

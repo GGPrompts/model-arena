@@ -1,0 +1,12 @@
+{
+  "id": "010-arena",
+  "title": "Design System Style Guide",
+  "date": "2026-01-27",
+  "prompt": "Create a complete design system style guide in a single index.html file. Self-contained with inline CSS/JS, no external dependencies except Google Fonts.\n\nREQUIREMENTS:\n- Pick ONE bold aesthetic direction and commit fully: brutalist/raw, retro-futuristic, art deco/geometric, maximalist chaos, lo-fi/zine, dark/moody, organic/natural, or invent your own\n- Typography: Use distinctive Google Fonts with personality - NO Inter, Roboto, Arial, or system fonts\n- Color palette: Take a strong position - bold saturated, moody restrained, or high-contrast minimal. Show swatches with hex codes\n- Spacing scale: Define a clear system (4px, 8px, 16px, etc.)\n- Component examples: Buttons, cards, inputs, badges in your aesthetic\n- Add CSS animations/transitions that match the vibe\n- Include a dark/light theme toggle using CSS variables\n- Make it UNFORGETTABLE - one thing someone will remember about this design\n\nThe style guide should showcase itself - the page displaying the guide should BE the aesthetic.",
+  "contestants": ["claude", "codex", "copilot"],
+  "answers": {
+    "a": "claude",
+    "b": "codex",
+    "c": "copilot"
+  }
+}

@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TURBO TUNNEL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vmin;
+            height: 75vmin;
+            max-width: 1200px;
+            max-height: 900px;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        /* CRT Effect Overlay */
+        #crtOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.15) 0px,
+                    rgba(0, 0, 0, 0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            z-index: 10;
+        }
+
+        #crtOverlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                rgba(0, 0, 0, 0.3) 100%
+            );
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 5;
+            font-size: clamp(12px, 2vmin, 18px);
+        }
+
+        .stat {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+        }
+
+        .stat span {
+            color: #fff;
+        }
+
+        #lives {
+            display: flex;
+            gap: 5px;
+        }
+
+        .life {
+            width: clamp(15px, 2.5vmin, 25px);
+            height: clamp(15px, 2.5vmin, 25px);
+            background: #f0f;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            box-shadow: 0 0 10px #f0f;
+        }
+
+        .life.lost {
+            background: #333;
+            box-shadow: none;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        #gameOverScreen {
+            display: none;
+        }
+
+        h1 {
+            font-size: clamp(32px, 8vmin, 72px);
+            color: #f0f;
+            text-shadow: 0 0 20px #f0f, 0 0 40px #f0f, 0 0 60px #f0f;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .subtitle {
+            font-size: clamp(14px, 2.5vmin, 24px);
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+            margin-bottom: 40px;
+        }
+
+        .controls {
+            font-size: clamp(10px, 1.8vmin, 16px);
+            color: #888;
+            text-align: center;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .controls span {
+            color: #ff0;
+            text-shadow: 0 0 5px #ff0;
+        }
+
+        .start-prompt {
+            font-size: clamp(16px, 3vmin, 28px);
+            color: #0f0;
+            text-shadow: 0 0 15px #0f0;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        #finalScore {
+            font-size: clamp(24px, 5vmin, 48px);
+            color: #0ff;
+            text-shadow: 0 0 20px #0ff;
+            margin: 20px 0;
+        }
+
+        #newHighScore {
+            font-size: clamp(18px, 3vmin, 28px);
+            color: #ff0;
+            text-shadow: 0 0 15px #ff0;
+            display: none;
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        #warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(24px, 5vmin, 48px);
+            color: #f00;
+            text-shadow: 0 0 20px #f00, 0 0 40px #f00;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #speedIndicator {
+            position: absolute;
+            bottom: 20px;
+            right: 25px;
+            font-size: clamp(14px, 2.5vmin, 22px);
+            color: #f80;
+            text-shadow: 0 0 10px #f80;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="crtOverlay"></div>
+
+        <div id="ui">
+            <div class="stat">DISTANCE: <span id="distance">0</span>m</div>
+            <div id="lives">
+                <div class="life" id="life1"></div>
+                <div class="life" id="life2"></div>
+                <div class="life" id="life3"></div>
+            </div>
+            <div class="stat">HIGH: <span id="highScore">0</span>m</div>
+        </div>
+
+        <div id="warning">! WARNING !</div>
+        <div id="speedIndicator">SPEED: <span id="speedLevel">1</span></div>
+
+        <div id="startScreen">
+            <h1>TURBO TUNNEL</h1>
+            <div class="subtitle">SURVIVE THE CHAOS</div>
+            <div class="controls">
+                <span>A/D</span> or <span>←/→</span> - Change Lane<br>
+                <span>W</span> or <span>SPACE</span> - Jump<br>
+                <span>S</span> or <span>↓</span> - Duck
+            </div>
+            <div class="start-prompt">PRESS SPACE TO START</div>
+        </div>
+
+        <div id="gameOverScreen">
+            <h1 style="color: #f00; text-shadow: 0 0 20px #f00, 0 0 40px #f00;">WASTED</h1>
+            <div id="finalScore">0m</div>
+            <div id="newHighScore">NEW HIGH SCORE!</div>
+            <div class="start-prompt">PRESS SPACE TO RETRY</div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas resolution
+        const CANVAS_WIDTH = 1200;
+        const CANVAS_HEIGHT = 900;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // Game constants
+        const LANE_COUNT = 3;
+        const HORIZON_Y = CANVAS_HEIGHT * 0.35;
+        const ROAD_TOP_WIDTH = CANVAS_WIDTH * 0.15;
+        const ROAD_BOTTOM_WIDTH = CANVAS_WIDTH * 0.9;
+        const PLAYER_Y = CANVAS_HEIGHT * 0.85;
+        const GRID_LINES = 20;
+
+        // Game state
+        let gameState = 'start'; // 'start', 'playing', 'gameover'
+        let distance = 0;
+        let highScore = parseInt(localStorage.getItem('turboTunnelHighScore')) || 0;
+        let lives = 3;
+        let currentLane = 1; // 0 = left, 1 = center, 2 = right
+        let targetLane = 1;
+        let lanePosition = 1;
+        let isJumping = false;
+        let isDucking = false;
+        let jumpProgress = 0;
+        let duckProgress = 0;
+        let baseSpeed = 0.8;
+        let currentSpeed = 0.8;
+        let speedLevel = 1;
+        let gameTime = 0;
+        let lastSpeedIncrease = 0;
+        let screenShake = 0;
+        let deathFlash = 0;
+        let invincible = 0;
+        let gridOffset = 0;
+        let obstacles = [];
+        let particles = [];
+        let speedLines = [];
+        let lastObstacleZ = 0;
+        let obstaclePatternIndex = 0;
+        let warningOpacity = 0;
+        let nearMissTimer = 0;
+
+        // Audio context
+        let audioCtx = null;
+        let engineOscillator = null;
+        let engineGain = null;
+
+        // Initialize audio
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Engine sound
+            engineOscillator = audioCtx.createOscillator();
+            engineGain = audioCtx.createGain();
+            const engineFilter = audioCtx.createBiquadFilter();
+
+            engineOscillator.type = 'sawtooth';
+            engineOscillator.frequency.value = 80;
+            engineFilter.type = 'lowpass';
+            engineFilter.frequency.value = 400;
+            engineGain.gain.value = 0;
+
+            engineOscillator.connect(engineFilter);
+            engineFilter.connect(engineGain);
+            engineGain.connect(audioCtx.destination);
+            engineOscillator.start();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            switch(type) {
+                case 'jump': {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                    break;
+                }
+                case 'crash': {
+                    const bufferSize = audioCtx.sampleRate * 0.5;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.1));
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    const noiseGain = audioCtx.createGain();
+                    noise.buffer = buffer;
+                    noiseGain.gain.setValueAtTime(0.4, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    noise.connect(noiseGain);
+                    noiseGain.connect(audioCtx.destination);
+                    noise.start(now);
+
+                    // Low boom
+                    const boom = audioCtx.createOscillator();
+                    const boomGain = audioCtx.createGain();
+                    boom.type = 'sine';
+                    boom.frequency.setValueAtTime(100, now);
+                    boom.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+                    boomGain.gain.setValueAtTime(0.3, now);
+                    boomGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    boom.connect(boomGain);
+                    boomGain.connect(audioCtx.destination);
+                    boom.start(now);
+                    boom.stop(now + 0.3);
+                    break;
+                }
+                case 'whoosh': {
+                    const bufferSize = audioCtx.sampleRate * 0.2;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        const t = i / bufferSize;
+                        data[i] = (Math.random() * 2 - 1) * Math.sin(t * Math.PI) * 0.3;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    const filter = audioCtx.createBiquadFilter();
+                    const gain = audioCtx.createGain();
+                    noise.buffer = buffer;
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 2000;
+                    filter.Q.value = 1;
+                    gain.gain.value = 0.2;
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start(now);
+                    break;
+                }
+                case 'speedup': {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(550, now + 0.1);
+                    osc.frequency.setValueAtTime(660, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.setValueAtTime(0.1, now + 0.25);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                    break;
+                }
+            }
+        }
+
+        function updateEngineSound() {
+            if (!engineGain) return;
+
+            if (gameState === 'playing') {
+                const baseFreq = 60 + currentSpeed * 40;
+                engineOscillator.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.1);
+                engineGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.1);
+            } else {
+                engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // Obstacle types
+        const OBSTACLE_TYPES = {
+            WALL_LEFT: { lanes: [0], height: 'full', color: '#f0f' },
+            WALL_CENTER: { lanes: [1], height: 'full', color: '#f0f' },
+            WALL_RIGHT: { lanes: [2], height: 'full', color: '#f0f' },
+            WALL_LEFT_CENTER: { lanes: [0, 1], height: 'full', color: '#f0f' },
+            WALL_CENTER_RIGHT: { lanes: [1, 2], height: 'full', color: '#f0f' },
+            LOW_BARRIER: { lanes: [0, 1, 2], height: 'low', color: '#0ff' },
+            LOW_LEFT: { lanes: [0], height: 'low', color: '#0ff' },
+            LOW_CENTER: { lanes: [1], height: 'low', color: '#0ff' },
+            LOW_RIGHT: { lanes: [2], height: 'low', color: '#0ff' },
+            FLOATING: { lanes: [0, 1, 2], height: 'high', color: '#ff0' },
+            FLOATING_LEFT: { lanes: [0], height: 'high', color: '#ff0' },
+            FLOATING_CENTER: { lanes: [1], height: 'high', color: '#ff0' },
+            FLOATING_RIGHT: { lanes: [2], height: 'high', color: '#ff0' },
+            RAMP: { lanes: [1], height: 'ramp', color: '#0f0' }
+        };
+
+        // Obstacle patterns (progressively harder)
+        const PATTERNS = [
+            // Super easy - single obstacles, one at a time
+            [['WALL_LEFT']],
+            [['WALL_RIGHT']],
+            [['WALL_CENTER']],
+            [['LOW_CENTER']],
+            // Easy - still single obstacles
+            [['WALL_LEFT'], ['WALL_RIGHT']],
+            [['WALL_RIGHT'], ['WALL_LEFT']],
+            [['LOW_LEFT'], ['LOW_RIGHT']],
+            [['FLOATING_CENTER']],
+            // Medium - introducing combos
+            [['WALL_LEFT_CENTER']],
+            [['WALL_CENTER_RIGHT']],
+            [['WALL_LEFT'], ['WALL_RIGHT'], ['WALL_CENTER']],
+            [['LOW_BARRIER']],
+            // Harder - mixed types
+            [['WALL_LEFT', 'LOW_RIGHT'], ['WALL_RIGHT', 'LOW_LEFT']],
+            [['FLOATING_CENTER'], ['WALL_LEFT'], ['WALL_RIGHT']],
+            [['LOW_BARRIER'], ['WALL_CENTER']],
+            [['WALL_LEFT'], ['FLOATING_CENTER'], ['WALL_RIGHT']],
+            [['RAMP'], ['FLOATING_CENTER']],
+            // Hard patterns
+            [['WALL_LEFT_CENTER'], ['LOW_RIGHT'], ['WALL_CENTER_RIGHT'], ['LOW_LEFT']],
+            [['FLOATING_LEFT', 'FLOATING_RIGHT'], ['WALL_CENTER'], ['LOW_LEFT', 'LOW_RIGHT']],
+            [['WALL_LEFT'], ['WALL_CENTER'], ['WALL_RIGHT'], ['LOW_BARRIER']],
+            // Brutal patterns
+            [['WALL_LEFT_CENTER'], ['WALL_CENTER_RIGHT'], ['WALL_LEFT_CENTER'], ['FLOATING_CENTER']],
+            [['LOW_BARRIER'], ['FLOATING_LEFT', 'FLOATING_RIGHT'], ['LOW_LEFT', 'LOW_RIGHT'], ['WALL_CENTER']],
+            [['WALL_LEFT'], ['LOW_CENTER', 'FLOATING_RIGHT'], ['WALL_RIGHT'], ['FLOATING_LEFT', 'LOW_CENTER']],
+        ];
+
+        function spawnObstacle(types, z) {
+            types.forEach(typeName => {
+                const type = OBSTACLE_TYPES[typeName];
+                if (!type) return;
+
+                type.lanes.forEach(lane => {
+                    obstacles.push({
+                        lane,
+                        z,
+                        type: typeName,
+                        height: type.height,
+                        color: type.color,
+                        passed: false
+                    });
+                });
+            });
+        }
+
+        function generateObstacles() {
+            // Grace period at start - no obstacles for first 1.5 seconds
+            if (gameTime < 1.5) return;
+
+            // Gap between obstacles - starts generous, gets tighter
+            const minGap = Math.max(180, 400 - speedLevel * 25);
+            const spawnZ = 1500;
+
+            if (lastObstacleZ < spawnZ) {
+                // Choose pattern based on game progression (slower unlock)
+                // First 15 seconds: only first 4 patterns (single obstacles)
+                // Then unlock ~1 new pattern every 5 seconds
+                let maxPattern;
+                if (gameTime < 15) {
+                    maxPattern = Math.min(3, Math.floor(gameTime / 4));
+                } else {
+                    maxPattern = Math.min(PATTERNS.length - 1, 4 + Math.floor((gameTime - 15) / 5));
+                }
+
+                // Bias toward easier patterns early on
+                let patternIdx;
+                if (gameTime < 30) {
+                    // Weighted toward lower indices
+                    patternIdx = Math.floor(Math.random() * Math.random() * (maxPattern + 1));
+                } else {
+                    patternIdx = Math.floor(Math.random() * (maxPattern + 1));
+                }
+                const pattern = PATTERNS[patternIdx];
+
+                let z = spawnZ;
+                // Gap between obstacles in same pattern - more generous
+                const inPatternGap = Math.max(120, minGap * 0.7);
+                pattern.forEach((types, i) => {
+                    spawnObstacle(types, z + i * inPatternGap);
+                });
+
+                lastObstacleZ = spawnZ + pattern.length * inPatternGap + minGap;
+            }
+        }
+
+        function getLaneX(lane, z) {
+            const t = z / 1500;
+            const roadWidth = ROAD_TOP_WIDTH + (ROAD_BOTTOM_WIDTH - ROAD_TOP_WIDTH) * (1 - t);
+            const centerX = CANVAS_WIDTH / 2;
+            const laneWidth = roadWidth / 3;
+            return centerX + (lane - 1) * laneWidth;
+        }
+
+        function getScale(z) {
+            return Math.max(0.05, 1 - z / 1500);
+        }
+
+        function getY(z) {
+            const t = z / 1500;
+            return PLAYER_Y - (PLAYER_Y - HORIZON_Y) * t;
+        }
+
+        // Particle system
+        function spawnParticle(x, y, color, velocityX = 0, velocityY = 0, life = 1) {
+            particles.push({
+                x, y, color,
+                vx: velocityX + (Math.random() - 0.5) * 2,
+                vy: velocityY + (Math.random() - 0.5) * 2,
+                life,
+                maxLife: life,
+                size: 2 + Math.random() * 3
+            });
+        }
+
+        function spawnExplosion(x, y) {
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 8;
+                const colors = ['#f00', '#f80', '#ff0', '#f0f'];
+                spawnParticle(
+                    x, y,
+                    colors[Math.floor(Math.random() * colors.length)],
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    0.5 + Math.random() * 0.5
+                );
+            }
+        }
+
+        function spawnTrailParticle() {
+            const playerX = getLaneX(lanePosition, 0);
+            const playerY = PLAYER_Y + (isJumping ? -80 * Math.sin(jumpProgress * Math.PI) : 0);
+
+            spawnParticle(
+                playerX + (Math.random() - 0.5) * 20,
+                playerY + 20,
+                currentSpeed > 2 ? '#f80' : '#0ff',
+                -1 - Math.random() * 2,
+                1 + Math.random(),
+                0.3 + Math.random() * 0.2
+            );
+        }
+
+        // Speed lines
+        function spawnSpeedLine() {
+            if (currentSpeed < 1.5) return;
+
+            speedLines.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: HORIZON_Y + Math.random() * (CANVAS_HEIGHT - HORIZON_Y) * 0.3,
+                length: 50 + Math.random() * 100 * currentSpeed,
+                alpha: 0.3 + Math.random() * 0.3
+            });
+        }
+
+        // Drawing functions
+        function drawBackground() {
+            // Sky gradient
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, HORIZON_Y);
+            skyGrad.addColorStop(0, '#0a0015');
+            skyGrad.addColorStop(1, '#1a0030');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, HORIZON_Y);
+
+            // Stars
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 73 + gameTime * 2) % CANVAS_WIDTH;
+                const y = (i * 37) % HORIZON_Y;
+                const size = (Math.sin(gameTime * 3 + i) + 1) * 1.5;
+                ctx.globalAlpha = 0.3 + Math.sin(gameTime * 2 + i) * 0.2;
+                ctx.fillRect(x, y, size, size);
+            }
+            ctx.globalAlpha = 1;
+
+            // Sun/Moon
+            const sunX = CANVAS_WIDTH / 2;
+            const sunY = HORIZON_Y - 80;
+            const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 100);
+            sunGrad.addColorStop(0, '#ff00ff');
+            sunGrad.addColorStop(0.5, '#ff008855');
+            sunGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = sunGrad;
+            ctx.fillRect(sunX - 100, sunY - 100, 200, 200);
+        }
+
+        function drawGrid() {
+            // Road surface
+            ctx.beginPath();
+            ctx.moveTo(CANVAS_WIDTH / 2 - ROAD_TOP_WIDTH / 2, HORIZON_Y);
+            ctx.lineTo(CANVAS_WIDTH / 2 + ROAD_TOP_WIDTH / 2, HORIZON_Y);
+            ctx.lineTo(CANVAS_WIDTH / 2 + ROAD_BOTTOM_WIDTH / 2, CANVAS_HEIGHT);
+            ctx.lineTo(CANVAS_WIDTH / 2 - ROAD_BOTTOM_WIDTH / 2, CANVAS_HEIGHT);
+            ctx.closePath();
+
+            const roadGrad = ctx.createLinearGradient(0, HORIZON_Y, 0, CANVAS_HEIGHT);
+            roadGrad.addColorStop(0, '#1a0030');
+            roadGrad.addColorStop(1, '#0a0020');
+            ctx.fillStyle = roadGrad;
+            ctx.fill();
+
+            // Grid lines (horizontal)
+            ctx.strokeStyle = '#f0f';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < GRID_LINES; i++) {
+                const z = ((i / GRID_LINES) * 1500 + gridOffset) % 1500;
+                const y = getY(z);
+                const scale = getScale(z);
+                const width = ROAD_TOP_WIDTH + (ROAD_BOTTOM_WIDTH - ROAD_TOP_WIDTH) * (1 - z / 1500);
+
+                ctx.globalAlpha = scale * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(CANVAS_WIDTH / 2 - width / 2, y);
+                ctx.lineTo(CANVAS_WIDTH / 2 + width / 2, y);
+                ctx.stroke();
+            }
+
+            // Lane dividers (vertical lines in perspective)
+            ctx.globalAlpha = 0.4;
+            for (let lane = 0; lane <= 3; lane++) {
+                ctx.beginPath();
+                const xTop = CANVAS_WIDTH / 2 + (lane - 1.5) * (ROAD_TOP_WIDTH / 3);
+                const xBottom = CANVAS_WIDTH / 2 + (lane - 1.5) * (ROAD_BOTTOM_WIDTH / 3);
+                ctx.moveTo(xTop, HORIZON_Y);
+                ctx.lineTo(xBottom, CANVAS_HEIGHT);
+                ctx.stroke();
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawSpeedLines() {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+
+            speedLines.forEach(line => {
+                ctx.globalAlpha = line.alpha;
+                ctx.beginPath();
+                ctx.moveTo(line.x, line.y);
+                ctx.lineTo(line.x - line.length, line.y);
+                ctx.stroke();
+            });
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawObstacle(obs) {
+            const scale = getScale(obs.z);
+            if (scale <= 0.05) return;
+
+            const x = getLaneX(obs.lane, obs.z);
+            const baseY = getY(obs.z);
+            const width = 80 * scale;
+
+            ctx.save();
+
+            // Glow effect
+            ctx.shadowColor = obs.color;
+            ctx.shadowBlur = 20 * scale;
+
+            ctx.strokeStyle = obs.color;
+            ctx.fillStyle = obs.color + '33';
+            ctx.lineWidth = 3 * scale;
+
+            switch(obs.height) {
+                case 'full':
+                    // Full height wall
+                    const wallHeight = 150 * scale;
+                    ctx.fillRect(x - width/2, baseY - wallHeight, width, wallHeight);
+                    ctx.strokeRect(x - width/2, baseY - wallHeight, width, wallHeight);
+
+                    // Neon accent lines
+                    ctx.beginPath();
+                    ctx.moveTo(x - width/2, baseY - wallHeight * 0.5);
+                    ctx.lineTo(x + width/2, baseY - wallHeight * 0.5);
+                    ctx.stroke();
+                    break;
+
+                case 'low':
+                    // Low barrier (must jump)
+                    const lowHeight = 40 * scale;
+                    ctx.fillRect(x - width/2, baseY - lowHeight, width, lowHeight);
+                    ctx.strokeRect(x - width/2, baseY - lowHeight, width, lowHeight);
+                    break;
+
+                case 'high':
+                    // Floating obstacle (must duck)
+                    const floatY = baseY - 100 * scale;
+                    const floatHeight = 50 * scale;
+
+                    // Pulsing effect
+                    const pulse = Math.sin(gameTime * 5) * 5 * scale;
+
+                    ctx.fillRect(x - width/2, floatY - pulse, width, floatHeight);
+                    ctx.strokeRect(x - width/2, floatY - pulse, width, floatHeight);
+
+                    // Support lines
+                    ctx.globalAlpha = 0.3;
+                    ctx.setLineDash([5 * scale, 5 * scale]);
+                    ctx.beginPath();
+                    ctx.moveTo(x - width/4, floatY + floatHeight - pulse);
+                    ctx.lineTo(x - width/4, baseY);
+                    ctx.moveTo(x + width/4, floatY + floatHeight - pulse);
+                    ctx.lineTo(x + width/4, baseY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+                    break;
+
+                case 'ramp':
+                    // Ramp (triangle)
+                    ctx.beginPath();
+                    ctx.moveTo(x - width/2, baseY);
+                    ctx.lineTo(x, baseY - 60 * scale);
+                    ctx.lineTo(x + width/2, baseY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            const playerX = getLaneX(lanePosition, 0);
+            let playerY = PLAYER_Y;
+            let playerScale = 1;
+
+            // Jump animation
+            if (isJumping) {
+                playerY -= 120 * Math.sin(jumpProgress * Math.PI);
+                playerScale = 1 + 0.2 * Math.sin(jumpProgress * Math.PI);
+            }
+
+            // Duck animation
+            if (isDucking) {
+                playerScale = 0.5 + 0.5 * (1 - duckProgress);
+            }
+
+            // Invincibility flash
+            if (invincible > 0 && Math.floor(invincible * 10) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            ctx.save();
+            ctx.translate(playerX, playerY);
+            ctx.scale(playerScale, isDucking ? 0.6 : playerScale);
+
+            // Bike body
+            ctx.fillStyle = '#0ff';
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 20;
+
+            // Main body
+            ctx.beginPath();
+            ctx.moveTo(-30, 0);
+            ctx.lineTo(-20, -40);
+            ctx.lineTo(20, -40);
+            ctx.lineTo(30, -10);
+            ctx.lineTo(20, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Rider
+            ctx.fillStyle = '#f0f';
+            ctx.shadowColor = '#f0f';
+            ctx.beginPath();
+            ctx.ellipse(0, -55, 15, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Engine glow
+            ctx.fillStyle = currentSpeed > 2 ? '#f80' : '#0ff';
+            ctx.shadowColor = currentSpeed > 2 ? '#f80' : '#0ff';
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.ellipse(-25, -5, 8, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+            ctx.globalAlpha = 1;
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 10;
+                ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+            });
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function drawWarning() {
+            if (warningOpacity > 0) {
+                const warning = document.getElementById('warning');
+                warning.style.opacity = warningOpacity;
+                warning.style.transform = `translate(-50%, -50%) scale(${1 + warningOpacity * 0.2})`;
+            } else {
+                document.getElementById('warning').style.opacity = 0;
+            }
+        }
+
+        function drawUI() {
+            document.getElementById('distance').textContent = Math.floor(distance);
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('speedLevel').textContent = speedLevel;
+
+            for (let i = 0; i < 3; i++) {
+                const lifeEl = document.getElementById(`life${i + 1}`);
+                lifeEl.classList.toggle('lost', i >= lives);
+            }
+        }
+
+        // Collision detection
+        function checkCollision(obs) {
+            if (obs.passed || obs.z > 100 || obs.z < -50) return false;
+            if (Math.abs(obs.lane - Math.round(lanePosition)) > 0.3) return false;
+            if (invincible > 0) return false;
+
+            const playerJumpHeight = isJumping ? Math.sin(jumpProgress * Math.PI) : 0;
+            const playerDucking = isDucking && duckProgress > 0.3;
+
+            switch(obs.height) {
+                case 'full':
+                    return true; // Always hits
+                case 'low':
+                    return playerJumpHeight < 0.3; // Must jump
+                case 'high':
+                    return !playerDucking && playerJumpHeight < 0.7; // Must duck or jump high
+                case 'ramp':
+                    if (playerJumpHeight < 0.2) {
+                        // Auto-jump on ramp
+                        isJumping = true;
+                        jumpProgress = 0.1;
+                        playSound('jump');
+                    }
+                    return false;
+            }
+            return false;
+        }
+
+        function checkNearMiss(obs) {
+            if (obs.passed) return false;
+            if (obs.z > 50 || obs.z < 0) return false;
+
+            const laneDiff = Math.abs(obs.lane - lanePosition);
+            return laneDiff > 0.5 && laneDiff < 1.2;
+        }
+
+        // Game logic
+        function handleDeath() {
+            lives--;
+            playSound('crash');
+            screenShake = 1;
+            deathFlash = 1;
+
+            const playerX = getLaneX(lanePosition, 0);
+            spawnExplosion(playerX, PLAYER_Y);
+
+            if (lives <= 0) {
+                gameState = 'gameover';
+                document.getElementById('gameOverScreen').style.display = 'flex';
+                document.getElementById('finalScore').textContent = Math.floor(distance) + 'm';
+
+                if (distance > highScore) {
+                    highScore = Math.floor(distance);
+                    localStorage.setItem('turboTunnelHighScore', highScore);
+                    document.getElementById('newHighScore').style.display = 'block';
+                } else {
+                    document.getElementById('newHighScore').style.display = 'none';
+                }
+            } else {
+                invincible = 2;
+                obstacles = [];
+                lastObstacleZ = 0;
+            }
+        }
+
+        function update(deltaTime) {
+            if (gameState !== 'playing') return;
+
+            gameTime += deltaTime;
+
+            // Speed progression - first increase at 12s, then every 10s
+            const nextSpeedTime = lastSpeedIncrease === 0 ? 12 : lastSpeedIncrease + 10;
+            if (gameTime >= nextSpeedTime) {
+                lastSpeedIncrease = gameTime;
+                speedLevel++;
+                baseSpeed = 0.8 + speedLevel * 0.2; // Starts slower, ramps faster
+                playSound('speedup');
+                warningOpacity = 1;
+            }
+
+            currentSpeed = baseSpeed;
+
+            // Lane movement (smooth but snappy)
+            lanePosition += (targetLane - lanePosition) * 0.25;
+
+            // Jump physics
+            if (isJumping) {
+                jumpProgress += deltaTime * 2.5;
+                if (jumpProgress >= 1) {
+                    isJumping = false;
+                    jumpProgress = 0;
+                }
+            }
+
+            // Duck physics
+            if (isDucking) {
+                duckProgress = Math.min(1, duckProgress + deltaTime * 8);
+            } else {
+                duckProgress = Math.max(0, duckProgress - deltaTime * 8);
+            }
+
+            // Distance
+            distance += currentSpeed * deltaTime * 20;
+
+            // Grid animation
+            gridOffset += currentSpeed * deltaTime * 500;
+            gridOffset %= (1500 / GRID_LINES);
+
+            // Update obstacles
+            const obstacleSpeed = currentSpeed * 800 * deltaTime;
+            obstacles.forEach(obs => {
+                obs.z -= obstacleSpeed;
+
+                // Check collision
+                if (checkCollision(obs)) {
+                    handleDeath();
+                }
+
+                // Check near miss
+                if (checkNearMiss(obs) && !obs.nearMissTriggered) {
+                    obs.nearMissTriggered = true;
+                    playSound('whoosh');
+                    screenShake = Math.max(screenShake, 0.2);
+                    nearMissTimer = 0.5;
+                }
+
+                // Mark as passed
+                if (obs.z < -50 && !obs.passed) {
+                    obs.passed = true;
+                }
+            });
+
+            // Remove old obstacles
+            obstacles = obstacles.filter(obs => obs.z > -100);
+
+            // Generate new obstacles
+            lastObstacleZ -= obstacleSpeed;
+            generateObstacles();
+
+            // Update particles
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= deltaTime;
+                p.vy += deltaTime * 5; // gravity
+            });
+            particles = particles.filter(p => p.life > 0);
+
+            // Trail particles
+            if (Math.random() < 0.3 * currentSpeed) {
+                spawnTrailParticle();
+            }
+
+            // Speed lines
+            if (Math.random() < 0.2 * currentSpeed) {
+                spawnSpeedLine();
+            }
+
+            // Update speed lines
+            speedLines.forEach(line => {
+                line.x -= currentSpeed * 30;
+                line.alpha -= deltaTime * 2;
+            });
+            speedLines = speedLines.filter(line => line.alpha > 0 && line.x > -line.length);
+
+            // Decay effects
+            screenShake *= 0.9;
+            deathFlash *= 0.95;
+            invincible = Math.max(0, invincible - deltaTime);
+            warningOpacity = Math.max(0, warningOpacity - deltaTime);
+            nearMissTimer = Math.max(0, nearMissTimer - deltaTime);
+
+            // Update engine sound
+            updateEngineSound();
+        }
+
+        function render() {
+            // Apply screen shake
+            ctx.save();
+            if (screenShake > 0.01) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake * 20,
+                    (Math.random() - 0.5) * screenShake * 20
+                );
+            }
+
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Death flash
+            if (deathFlash > 0.1) {
+                ctx.fillStyle = `rgba(255, 0, 0, ${deathFlash * 0.5})`;
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            drawBackground();
+            drawGrid();
+            drawSpeedLines();
+
+            // Sort and draw obstacles (far to near)
+            obstacles
+                .sort((a, b) => b.z - a.z)
+                .forEach(drawObstacle);
+
+            drawParticles();
+            drawPlayer();
+
+            // Near miss indicator
+            if (nearMissTimer > 0) {
+                ctx.fillStyle = `rgba(255, 255, 0, ${nearMissTimer * 0.3})`;
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            ctx.restore();
+
+            drawWarning();
+            drawUI();
+        }
+
+        function resetGame() {
+            distance = 0;
+            lives = 3;
+            currentLane = 1;
+            targetLane = 1;
+            lanePosition = 1;
+            isJumping = false;
+            isDucking = false;
+            jumpProgress = 0;
+            duckProgress = 0;
+            baseSpeed = 0.8;
+            currentSpeed = 0.8;
+            speedLevel = 1;
+            gameTime = 0;
+            lastSpeedIncrease = 0;
+            screenShake = 0;
+            deathFlash = 0;
+            invincible = 0;
+            gridOffset = 0;
+            obstacles = [];
+            particles = [];
+            speedLines = [];
+            lastObstacleZ = 0;
+            warningOpacity = 0;
+            nearMissTimer = 0;
+        }
+
+        // Input handling
+        const keys = {};
+
+        document.addEventListener('keydown', (e) => {
+            if (keys[e.code]) return;
+            keys[e.code] = true;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+
+                if (gameState === 'start') {
+                    initAudio();
+                    gameState = 'playing';
+                    document.getElementById('startScreen').style.display = 'none';
+                    resetGame();
+                } else if (gameState === 'gameover') {
+                    gameState = 'playing';
+                    document.getElementById('gameOverScreen').style.display = 'none';
+                    resetGame();
+                } else if (gameState === 'playing' && !isJumping) {
+                    isJumping = true;
+                    jumpProgress = 0;
+                    playSound('jump');
+                }
+            }
+
+            if (gameState !== 'playing') return;
+
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                targetLane = Math.max(0, targetLane - 1);
+            }
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+                targetLane = Math.min(2, targetLane + 1);
+            }
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+                if (!isJumping) {
+                    isJumping = true;
+                    jumpProgress = 0;
+                    playSound('jump');
+                }
+            }
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                isDucking = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                isDucking = false;
+            }
+        });
+
+        // Game loop
+        let lastTime = 0;
+
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+
+            update(deltaTime);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        document.getElementById('highScore').textContent = highScore;
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

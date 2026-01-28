@@ -1,0 +1,9 @@
+{
+  "id": "012-turbo-tunnel",
+  "title": "Turbo Tunnel",
+  "date": "2026-01-28",
+  "prompt": "Build a Battletoads Turbo Tunnel style obstacle racing game in a single HTML file.\n\nGAMEPLAY:\n- Player is on a speeder bike rushing forward (side-scrolling or into-screen perspective)\n- Obstacles come at you: walls with gaps, ramps to jump, low barriers to duck, floating hazards\n- 3 lanes (left/center/right) controlled by arrow keys or A/D\n- Jump with spacebar or W, duck with S or down arrow\n- Speed increases every 10 seconds\n- Obstacles get denser and patterns get more complex as you progress\n- One hit = death, but give 3 lives\n- Show distance traveled as score, track high score\n\nVISUALS:\n- Synthwave/neon aesthetic (keep the CRT vibe from previous challenges)\n- Grid floor rushing toward player (like the typing arena background)\n- Glowing neon obstacles (walls, barriers, ramps)\n- Motion blur / speed lines at high velocity\n- Screen shake on near-misses, big shake + flash on death\n- Particle trail behind the bike\n\nAUDIO (Web Audio API):\n- Continuous engine hum that pitch-shifts with speed\n- Whoosh sounds for near-misses\n- Satisfying jump sound\n- Crash explosion on death\n- Retro beeps for checkpoints/speed increases\n\nDIFFICULTY PROGRESSION:\n- Start manageable, ramp to brutal\n- Introduce new obstacle types over time\n- By 60 seconds it should feel like chaos\n- Include \"warning\" indicators for upcoming obstacles\n\nMake it feel like that \"flow state or die\" tension where you're reacting on pure instinct. All self-contained in a single HTML file.",
+  "contestants": [],
+  "note": "Inspired by Battletoads Turbo Tunnel and Fusion Frenzy Twisted System",
+  "answers": {}
+}

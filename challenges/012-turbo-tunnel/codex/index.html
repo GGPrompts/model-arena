@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Turbo Tunnel: Neon Rush</title>
+<style>
+  :root {
+    --neon-pink: #ff3cac;
+    --neon-blue: #33ccff;
+    --neon-purple: #6d28ff;
+    --neon-cyan: #00f5ff;
+    --neon-green: #7bff4d;
+    --bg-deep: #080014;
+    --bg-mid: #14032b;
+    --bg-glow: #2b0a4d;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 20%, var(--bg-glow), var(--bg-deep) 60%);
+    color: #e8f7ff;
+    font-family: "Orbitron", "Arial Black", sans-serif;
+  }
+
+  #wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 10%, rgba(90, 0, 140, 0.6), rgba(10, 0, 20, 0.95) 70%);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .hud-row {
+    position: absolute;
+    top: 18px;
+    left: 24px;
+    right: 24px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 12px rgba(0, 245, 255, 0.6);
+  }
+
+  #message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 0 0 16px rgba(255, 60, 172, 0.8);
+  }
+
+  #crt::before,
+  #crt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  #crt::before {
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.04),
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.1) 3px
+    );
+    mix-blend-mode: screen;
+    opacity: 0.5;
+  }
+
+  #crt::after {
+    background: radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.65));
+    mix-blend-mode: multiply;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div class="hud-row">
+      <div id="score">DISTANCE 0</div>
+      <div id="status">LIVES 3 | SPEED 0</div>
+      <div id="hiscore">HIGH 0</div>
+    </div>
+    <div id="message"></div>
+  </div>
+  <div id="crt"></div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const statusEl = document.getElementById('status');
+  const hiscoreEl = document.getElementById('hiscore');
+  const messageEl = document.getElementById('message');
+
+  const state = {
+    running: false,
+    gameOver: false,
+    started: false,
+    lives: 3,
+    distance: 0,
+    highScore: Number(localStorage.getItem('turbo_highscore') || 0),
+    time: 0,
+    level: 0,
+    speed: 30,
+    lane: 1,
+    jumpTimer: 0,
+    duckTimer: 0,
+    invuln: 0,
+    shake: 0,
+    flash: 0,
+    warningFlash: 0,
+    spawnTimer: 0,
+    nextSpawn: 1.2,
+    obstacles: [],
+    particles: [],
+    speedLines: [],
+  };
+
+  hiscoreEl.textContent = `HIGH ${Math.floor(state.highScore)}`;
+
+  const config = {
+    drawDist: 160,
+    baseSpeed: 32,
+    speedGain: 6,
+    jumpDuration: 0.7,
+    duckDuration: 0.6,
+    jumpHeight: 70,
+    laneCount: 3,
+    spawnZ: 150,
+    warningDist: 85,
+    nearMissDist: 3,
+    cameraShakeDecay: 2.4,
+  };
+
+  let width = 0;
+  let height = 0;
+  let centerX = 0;
+  let baseY = 0;
+  let horizonY = 0;
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    centerX = width * 0.5;
+    horizonY = height * 0.28;
+    baseY = height * 0.86;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+    keys.add(e.key.toLowerCase());
+
+    if (!state.started) {
+      state.started = true;
+      state.running = true;
+      messageEl.textContent = "";
+      initAudio();
+    }
+
+    if (state.gameOver && (e.key === " " || e.key.toLowerCase() === "enter")) {
+      resetRun();
+    }
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+  function resetRun() {
+    state.running = true;
+    state.gameOver = false;
+    state.lives = 3;
+    state.distance = 0;
+    state.time = 0;
+    state.level = 0;
+    state.speed = config.baseSpeed;
+    state.lane = 1;
+    state.jumpTimer = 0;
+    state.duckTimer = 0;
+    state.invuln = 0;
+    state.shake = 0;
+    state.flash = 0;
+    state.spawnTimer = 0;
+    state.nextSpawn = 1.2;
+    state.obstacles = [];
+    state.particles = [];
+    messageEl.textContent = "";
+  }
+
+  function laneXAtDepth(laneIndex, depth) {
+    const roadBottom = width * 0.64;
+    const roadTop = width * 0.12;
+    const roadWidth = lerp(roadBottom, roadTop, depth);
+    const laneWidth = roadWidth / config.laneCount;
+    const offset = (laneIndex - 1) * laneWidth;
+    return centerX + offset;
+  }
+
+  function roadWidthAtDepth(depth) {
+    return lerp(width * 0.64, width * 0.12, depth);
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+
+  function spawnObstacle(type, options = {}) {
+    const obstacle = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
+      type,
+      lane: options.lane ?? Math.floor(Math.random() * config.laneCount),
+      gapLane: options.gapLane ?? null,
+      z: options.z ?? config.spawnZ,
+      hit: false,
+      nearMissed: false,
+      warned: false,
+    };
+    state.obstacles.push(obstacle);
+  }
+
+  function spawnPattern(level) {
+    const patternRoll = Math.random();
+    const baseZ = config.spawnZ;
+    if (level < 2) {
+      if (patternRoll < 0.4) {
+        spawnObstacle('ramp', { lane: Math.floor(Math.random() * 3), z: baseZ });
+      } else if (patternRoll < 0.7) {
+        spawnObstacle('low', { lane: Math.floor(Math.random() * 3), z: baseZ });
+      } else {
+        spawnObstacle('wall', { gapLane: Math.floor(Math.random() * 3), z: baseZ });
+      }
+      return;
+    }
+
+    if (level < 4) {
+      if (patternRoll < 0.4) {
+        spawnObstacle('low', { lane: Math.floor(Math.random() * 3), z: baseZ });
+        spawnObstacle('ramp', { lane: Math.floor(Math.random() * 3), z: baseZ + 10 });
+      } else if (patternRoll < 0.7) {
+        const gap = Math.floor(Math.random() * 3);
+        spawnObstacle('wall', { gapLane: gap, z: baseZ });
+        spawnObstacle('float', { lane: (gap + 1) % 3, z: baseZ + 12 });
+      } else {
+        spawnObstacle('float', { lane: Math.floor(Math.random() * 3), z: baseZ });
+      }
+      return;
+    }
+
+    if (level < 6) {
+      if (patternRoll < 0.35) {
+        const gap = Math.floor(Math.random() * 3);
+        spawnObstacle('wall', { gapLane: gap, z: baseZ });
+        spawnObstacle('low', { lane: (gap + 1) % 3, z: baseZ + 8 });
+        spawnObstacle('ramp', { lane: gap, z: baseZ + 14 });
+      } else if (patternRoll < 0.7) {
+        spawnObstacle('ramp', { lane: Math.floor(Math.random() * 3), z: baseZ });
+        spawnObstacle('float', { lane: Math.floor(Math.random() * 3), z: baseZ + 8 });
+        spawnObstacle('low', { lane: Math.floor(Math.random() * 3), z: baseZ + 16 });
+      } else {
+        spawnObstacle('wall', { gapLane: Math.floor(Math.random() * 3), z: baseZ });
+        spawnObstacle('float', { lane: Math.floor(Math.random() * 3), z: baseZ + 10 });
+      }
+      return;
+    }
+
+    const gap = Math.floor(Math.random() * 3);
+    spawnObstacle('wall', { gapLane: gap, z: baseZ });
+    spawnObstacle('float', { lane: (gap + 2) % 3, z: baseZ + 6 });
+    spawnObstacle('low', { lane: (gap + 1) % 3, z: baseZ + 12 });
+    spawnObstacle('ramp', { lane: gap, z: baseZ + 18 });
+  }
+
+  function update(dt) {
+    if (!state.running) return;
+
+    state.time += dt;
+    const newLevel = Math.floor(state.time / 10);
+    if (newLevel !== state.level) {
+      state.level = newLevel;
+      playBeep();
+      state.flash = 0.6;
+    }
+
+    state.speed = config.baseSpeed + state.level * config.speedGain;
+    state.distance += state.speed * dt;
+
+    if (state.invuln > 0) state.invuln -= dt;
+    if (state.shake > 0) state.shake -= dt * config.cameraShakeDecay;
+    if (state.flash > 0) state.flash -= dt * 1.5;
+
+    handleInput(dt);
+
+    state.spawnTimer += dt;
+    const density = clamp(1.2 - state.level * 0.08, 0.45, 1.2);
+    if (state.spawnTimer >= state.nextSpawn) {
+      spawnPattern(state.level);
+      state.spawnTimer = 0;
+      state.nextSpawn = density * rand(0.6, 1.1);
+    }
+
+    for (const obstacle of state.obstacles) {
+      obstacle.z -= state.speed * dt;
+    }
+
+    state.obstacles = state.obstacles.filter(o => o.z > -12);
+
+    updateParticles(dt);
+    updateSpeedLines(dt);
+
+    checkCollisions();
+
+    if (state.distance > state.highScore) {
+      state.highScore = state.distance;
+      localStorage.setItem('turbo_highscore', String(Math.floor(state.highScore)));
+    }
+  }
+
+  function handleInput(dt) {
+    if (keys.has('arrowleft') || keys.has('a')) {
+      state.lane = Math.max(0, state.lane - 1);
+      keys.delete('arrowleft');
+      keys.delete('a');
+    }
+    if (keys.has('arrowright') || keys.has('d')) {
+      state.lane = Math.min(2, state.lane + 1);
+      keys.delete('arrowright');
+      keys.delete('d');
+    }
+
+    if ((keys.has(' ') || keys.has('w') || keys.has('arrowup')) && state.jumpTimer <= 0 && state.duckTimer <= 0) {
+      state.jumpTimer = config.jumpDuration;
+      playJump();
+    }
+
+    if ((keys.has('s') || keys.has('arrowdown')) && state.duckTimer <= 0 && state.jumpTimer <= 0) {
+      state.duckTimer = config.duckDuration;
+    }
+
+    if (state.jumpTimer > 0) state.jumpTimer -= dt;
+    if (state.duckTimer > 0) state.duckTimer -= dt;
+  }
+
+  function checkCollisions() {
+    for (const obstacle of state.obstacles) {
+      if (obstacle.hit) continue;
+      if (obstacle.z > 2) continue;
+
+      const jumping = state.jumpTimer > 0;
+      const ducking = state.duckTimer > 0;
+
+      let hit = false;
+      let nearMiss = false;
+
+      if (obstacle.type === 'wall') {
+        if (state.lane !== obstacle.gapLane) {
+          hit = true;
+        }
+      } else if (obstacle.lane === state.lane) {
+        if (obstacle.type === 'ramp') {
+          hit = !jumping;
+          nearMiss = jumping;
+        } else if (obstacle.type === 'low') {
+          hit = !ducking;
+          nearMiss = ducking;
+        } else if (obstacle.type === 'float') {
+          hit = !jumping;
+          nearMiss = jumping;
+        }
+      }
+
+      if (hit) {
+        obstacle.hit = true;
+        onHit();
+      } else if (!obstacle.nearMissed && nearMiss && obstacle.z < config.nearMissDist) {
+        obstacle.nearMissed = true;
+        state.shake = Math.max(state.shake, 0.35);
+        playWhoosh();
+      }
+    }
+  }
+
+  function onHit() {
+    if (state.invuln > 0) return;
+    state.lives -= 1;
+    state.invuln = 1.2;
+    state.shake = 1.2;
+    state.flash = 1.0;
+    playCrash();
+    if (state.lives <= 0) {
+      state.gameOver = true;
+      state.running = false;
+      messageEl.textContent = 'GAME OVER - PRESS SPACE';
+    }
+  }
+
+  function updateParticles(dt) {
+    const laneX = laneXAtDepth(state.lane, 0);
+    const jumpOffset = getJumpOffset();
+    const originY = baseY - jumpOffset;
+    const count = Math.floor(6 + state.speed * 0.1);
+    for (let i = 0; i < count; i++) {
+      state.particles.push({
+        x: laneX + rand(-8, 8),
+        y: originY + rand(6, 18),
+        vx: rand(-10, 10),
+        vy: rand(20, 60),
+        life: rand(0.4, 0.8),
+        hue: rand(180, 300),
+      });
+    }
+
+    state.particles = state.particles.filter(p => {
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      return p.life > 0;
+    });
+  }
+
+  function updateSpeedLines(dt) {
+    if (state.speed < 48) return;
+    const spawnCount = Math.floor((state.speed - 45) * 0.2);
+    for (let i = 0; i < spawnCount; i++) {
+      state.speedLines.push({
+        x: rand(0, width),
+        y: rand(0, height),
+        len: rand(40, 120),
+        life: rand(0.2, 0.4),
+        speed: rand(400, 700),
+      });
+    }
+    state.speedLines = state.speedLines.filter(line => {
+      line.life -= dt;
+      line.y += line.speed * dt;
+      return line.life > 0;
+    });
+  }
+
+  function getJumpOffset() {
+    if (state.jumpTimer <= 0) return 0;
+    const progress = 1 - state.jumpTimer / config.jumpDuration;
+    return Math.sin(progress * Math.PI) * config.jumpHeight;
+  }
+
+  function render() {
+    ctx.save();
+    if (state.shake > 0) {
+      ctx.translate(rand(-8, 8) * state.shake, rand(-6, 6) * state.shake);
+    }
+    drawBackground();
+    drawGrid();
+    drawObstacles();
+    drawBike();
+    drawParticles();
+    drawSpeedLines();
+    drawWarnings();
+    if (state.flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${state.flash})`;
+      ctx.fillRect(0, 0, width, height);
+    }
+    ctx.restore();
+
+    scoreEl.textContent = `DISTANCE ${Math.floor(state.distance)}`;
+    statusEl.textContent = `LIVES ${state.lives} | SPEED ${Math.floor(state.speed)}`;
+    hiscoreEl.textContent = `HIGH ${Math.floor(state.highScore)}`;
+
+    if (!state.started) {
+      messageEl.textContent = 'PRESS ANY KEY TO START';
+    }
+  }
+
+  function drawBackground() {
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#0a0b2e');
+    grad.addColorStop(0.4, '#140b3f');
+    grad.addColorStop(1, '#05010d');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(120, 40, 255, 0.15)';
+    ctx.beginPath();
+    ctx.arc(centerX, height * 0.2, width * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawGrid() {
+    const roadBottom = width * 0.64;
+    const roadTop = width * 0.12;
+    const lineCount = 24;
+    const spacing = 6;
+    const offset = (state.distance * 0.3) % spacing;
+
+    ctx.lineWidth = 1;
+    for (let i = 0; i < lineCount; i++) {
+      const z = (i * spacing + offset) * 1.6;
+      const depth = clamp(z / config.drawDist, 0, 1);
+      const y = lerp(baseY, horizonY, depth);
+      const roadWidth = lerp(roadBottom, roadTop, depth);
+      const alpha = 1 - depth;
+      ctx.strokeStyle = `rgba(0, 245, 255, ${0.3 + alpha * 0.4})`;
+      ctx.beginPath();
+      ctx.moveTo(centerX - roadWidth * 0.5, y);
+      ctx.lineTo(centerX + roadWidth * 0.5, y);
+      ctx.stroke();
+    }
+
+    for (let lane = 0; lane <= config.laneCount; lane++) {
+      const laneRatio = lane / config.laneCount - 0.5;
+      ctx.strokeStyle = 'rgba(255, 60, 172, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(centerX + roadBottom * laneRatio, baseY);
+      ctx.lineTo(centerX + roadTop * laneRatio, horizonY);
+      ctx.stroke();
+    }
+  }
+
+  function drawObstacles() {
+    const sorted = [...state.obstacles].sort((a, b) => b.z - a.z);
+    for (const obstacle of sorted) {
+      const depth = clamp(obstacle.z / config.drawDist, 0, 1);
+      const y = lerp(baseY, horizonY, depth);
+      const roadWidth = roadWidthAtDepth(depth);
+      const laneWidth = roadWidth / config.laneCount;
+      const glow = `rgba(0,245,255,${0.3 + (1 - depth) * 0.4})`;
+
+      if (obstacle.type === 'wall') {
+        const wallHeight = lerp(70, 10, depth);
+        ctx.fillStyle = 'rgba(255, 60, 172, 0.25)';
+        ctx.strokeStyle = 'rgba(255, 60, 172, 0.9)';
+        ctx.lineWidth = 2;
+
+        for (let lane = 0; lane < config.laneCount; lane++) {
+          if (lane === obstacle.gapLane) continue;
+          const x = laneXAtDepth(lane, depth);
+          ctx.beginPath();
+          ctx.rect(x - laneWidth * 0.42, y - wallHeight, laneWidth * 0.84, wallHeight);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = glow;
+        }
+      } else {
+        const x = laneXAtDepth(obstacle.lane, depth);
+        if (obstacle.type === 'ramp') {
+          const rampHeight = lerp(60, 8, depth);
+          ctx.fillStyle = 'rgba(51, 204, 255, 0.25)';
+          ctx.strokeStyle = 'rgba(51, 204, 255, 0.9)';
+          ctx.beginPath();
+          ctx.moveTo(x - laneWidth * 0.4, y);
+          ctx.lineTo(x + laneWidth * 0.4, y);
+          ctx.lineTo(x, y - rampHeight);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (obstacle.type === 'low') {
+          const barrierHeight = lerp(35, 6, depth);
+          ctx.fillStyle = 'rgba(0, 245, 255, 0.18)';
+          ctx.strokeStyle = 'rgba(0, 245, 255, 0.9)';
+          ctx.beginPath();
+          ctx.rect(x - laneWidth * 0.32, y - barrierHeight, laneWidth * 0.64, barrierHeight);
+          ctx.fill();
+          ctx.stroke();
+        } else if (obstacle.type === 'float') {
+          const floatHeight = lerp(80, 14, depth);
+          ctx.fillStyle = 'rgba(123, 255, 77, 0.18)';
+          ctx.strokeStyle = 'rgba(123, 255, 77, 0.9)';
+          ctx.beginPath();
+          ctx.ellipse(x, y - floatHeight * 0.6, laneWidth * 0.3, floatHeight * 0.28, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function drawBike() {
+    const laneX = laneXAtDepth(state.lane, 0);
+    const jumpOffset = getJumpOffset();
+    const ducking = state.duckTimer > 0;
+    const bodyHeight = ducking ? 12 : 18;
+
+    ctx.save();
+    ctx.translate(laneX, baseY - jumpOffset);
+
+    ctx.strokeStyle = 'rgba(255, 60, 172, 0.9)';
+    ctx.fillStyle = 'rgba(255, 60, 172, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-26, 0);
+    ctx.lineTo(0, -bodyHeight);
+    ctx.lineTo(26, 0);
+    ctx.lineTo(0, bodyHeight);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(-18, 2);
+    ctx.lineTo(18, 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of state.particles) {
+      ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.life})`;
+      ctx.fillRect(p.x, p.y, 2, 2);
+    }
+  }
+
+  function drawSpeedLines() {
+    if (state.speed < 48) return;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    for (const line of state.speedLines) {
+      ctx.beginPath();
+      ctx.moveTo(line.x, line.y);
+      ctx.lineTo(line.x, line.y + line.len);
+      ctx.stroke();
+    }
+  }
+
+  function drawWarnings() {
+    const warnings = state.obstacles.filter(o => o.z < config.warningDist && o.z > 0);
+    if (!warnings.length) return;
+    const topY = horizonY - 25;
+    const laneWidth = width * 0.1;
+
+    for (const obstacle of warnings) {
+      if (obstacle.type === 'wall') {
+        for (let lane = 0; lane < config.laneCount; lane++) {
+          if (lane === obstacle.gapLane) continue;
+          const x = centerX + (lane - 1) * laneWidth * 0.9;
+          ctx.fillStyle = 'rgba(255, 60, 172, 0.8)';
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x - 8, topY - 12);
+          ctx.lineTo(x + 8, topY - 12);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else {
+        const x = centerX + (obstacle.lane - 1) * laneWidth * 0.9;
+        ctx.fillStyle = 'rgba(0, 245, 255, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(x, topY);
+        ctx.lineTo(x - 8, topY - 12);
+        ctx.lineTo(x + 8, topY - 12);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.035, (now - last) / 1000);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  let audioCtx;
+  let engineOsc;
+  let engineGain;
+  let engineFilter;
+  let noiseBuffer;
+
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    engineOsc = audioCtx.createOscillator();
+    engineOsc.type = 'sawtooth';
+    engineGain = audioCtx.createGain();
+    engineFilter = audioCtx.createBiquadFilter();
+    engineFilter.type = 'lowpass';
+    engineFilter.frequency.value = 1200;
+
+    engineOsc.frequency.value = 80;
+    engineGain.gain.value = 0.08;
+
+    engineOsc.connect(engineFilter).connect(engineGain).connect(audioCtx.destination);
+    engineOsc.start();
+
+    noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1, audioCtx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    updateAudio();
+  }
+
+  function updateAudio() {
+    if (!audioCtx) return;
+    const freq = 60 + state.speed * 3;
+    engineOsc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+    engineGain.gain.setTargetAtTime(0.06 + state.speed * 0.002, audioCtx.currentTime, 0.1);
+    requestAnimationFrame(updateAudio);
+  }
+
+  function playWhoosh() {
+    if (!audioCtx) return;
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 900;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    src.connect(filter).connect(gain).connect(audioCtx.destination);
+    src.start();
+    gain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    src.stop(audioCtx.currentTime + 0.3);
+  }
+
+  function playJump() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 200;
+    osc.connect(gain).connect(audioCtx.destination);
+    gain.gain.value = 0.12;
+    osc.start();
+    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.stop(audioCtx.currentTime + 0.3);
+  }
+
+  function playCrash() {
+    if (!audioCtx) return;
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.3;
+    src.connect(filter).connect(gain).connect(audioCtx.destination);
+    src.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+    src.stop(audioCtx.currentTime + 0.7);
+
+    const boom = audioCtx.createOscillator();
+    const boomGain = audioCtx.createGain();
+    boom.type = 'sine';
+    boom.frequency.value = 90;
+    boom.connect(boomGain).connect(audioCtx.destination);
+    boomGain.gain.value = 0.2;
+    boom.start();
+    boom.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.55);
+    boom.stop(audioCtx.currentTime + 0.6);
+  }
+
+  function playBeep() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 700;
+    gain.gain.value = 0.06;
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+    osc.stop(audioCtx.currentTime + 0.2);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RETRO TYPING ARENA</title>
+  <style>
+    /* =========================================================================
+       RETRO TYPING ARENA - THE INSANE STYLESHEET
+       A CRT that's about to explode with synthwave energy
+       ========================================================================= */
+
+    :root {
+      --crt-green: #00ff41;
+      --crt-amber: #ffb000;
+      --crt-cyan: #00ffff;
+      --crt-magenta: #ff00ff;
+      --crt-red: #ff0040;
+      --crt-white: #ffffff;
+      --crt-bg: #0a0a0a;
+      --shake-intensity: 0;
+      --scanline-intensity: 0.15;
+      --combo-glow: 0;
+      --barrel-warp: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: var(--crt-green);
+      font-family: 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* =========================================================================
+       MAIN CONTAINER
+       ========================================================================= */
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Synthwave grid canvas - full background */
+    #grid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* CRT overlay container */
+    #crt-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(1200px, 95vw);
+      height: min(800px, 90vh);
+      background: rgba(10, 10, 10, 0.85);
+      border-radius: 20px;
+      overflow: hidden;
+      z-index: 10;
+      border: 2px solid rgba(0, 255, 65, 0.3);
+      box-shadow:
+        0 0 60px rgba(0, 255, 65, 0.2),
+        inset 0 0 100px rgba(0, 0, 0, 0.5);
+    }
+
+    /* CRT glass curvature */
+    #crt-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Combo border glow */
+    #crt-container::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 24px;
+      background: conic-gradient(from 0deg, var(--crt-cyan), var(--crt-magenta), var(--crt-green), var(--crt-amber), var(--crt-cyan));
+      opacity: var(--combo-glow);
+      filter: blur(8px);
+      z-index: -1;
+      animation: border-rotate 2s linear infinite;
+    }
+
+    @keyframes border-rotate {
+      to { filter: blur(8px) hue-rotate(360deg); }
+    }
+
+    /* Scanlines */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      animation: scanline-scroll 8s linear infinite;
+    }
+
+    @keyframes scanline-scroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(4px); }
+    }
+
+    /* Particle container */
+    .particle-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 200;
+      overflow: hidden;
+    }
+
+    /* =========================================================================
+       SCREEN SHAKE
+       ========================================================================= */
+    .shake { animation: screen-shake 0.1s ease-out; }
+    .shake-heavy { animation: screen-shake-heavy 0.15s ease-out; }
+    .shake-violent { animation: screen-shake-violent 0.2s ease-out; }
+
+    @keyframes screen-shake {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(calc(-50% + 3px), calc(-50% - 2px)) rotate(0.5deg); }
+      50% { transform: translate(calc(-50% - 3px), calc(-50% + 2px)) rotate(-0.5deg); }
+      75% { transform: translate(calc(-50% + 2px), calc(-50% + 3px)) rotate(0.3deg); }
+    }
+
+    @keyframes screen-shake-heavy {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      10% { transform: translate(calc(-50% - 8px), calc(-50% + 4px)) rotate(-1deg); }
+      30% { transform: translate(calc(-50% + 6px), calc(-50% - 3px)) rotate(0.5deg); }
+      50% { transform: translate(calc(-50% - 4px), calc(-50% + 2px)) rotate(-0.3deg); }
+      70% { transform: translate(calc(-50% + 2px), calc(-50% - 1px)) rotate(0.1deg); }
+    }
+
+    @keyframes screen-shake-violent {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      10% { transform: translate(calc(-50% - 12px), calc(-50% + 6px)) rotate(-2deg) scale(1.01); }
+      30% { transform: translate(calc(-50% + 10px), calc(-50% - 5px)) rotate(1.5deg) scale(0.99); }
+      50% { transform: translate(calc(-50% - 8px), calc(-50% + 4px)) rotate(-1deg); }
+      70% { transform: translate(calc(-50% + 4px), calc(-50% - 2px)) rotate(0.5deg); }
+    }
+
+    /* RGB Split */
+    .rgb-split {
+      animation: rgb-split 0.15s ease-out;
+    }
+
+    @keyframes rgb-split {
+      0% { text-shadow: -2px 0 var(--crt-red), 2px 0 var(--crt-cyan); }
+      50% { text-shadow: -4px 0 var(--crt-red), 4px 0 var(--crt-cyan), 0 2px var(--crt-green); filter: blur(0.5px); }
+      100% { text-shadow: none; }
+    }
+
+    /* Flicker */
+    .flicker { animation: screen-flicker 0.1s steps(2); }
+    .flicker-ambient { animation: flicker-ambient 4s steps(10) infinite; }
+
+    @keyframes screen-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    @keyframes flicker-ambient {
+      0%, 100% { opacity: 1; }
+      30% { opacity: 0.97; }
+      60% { opacity: 0.96; }
+    }
+
+    /* =========================================================================
+       GAME UI
+       ========================================================================= */
+    #game-ui {
+      position: relative;
+      z-index: 20;
+      height: 100%;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header HUD */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+    }
+
+    .hud-item {
+      text-align: center;
+    }
+
+    .hud-label {
+      font-size: 0.75em;
+      color: rgba(0, 255, 65, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .hud-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      text-shadow: 0 0 10px var(--crt-green);
+    }
+
+    .hud-value.score { color: var(--crt-amber); text-shadow: 0 0 10px var(--crt-amber); }
+    .hud-value.combo { color: var(--crt-cyan); text-shadow: 0 0 10px var(--crt-cyan); }
+    .hud-value.wpm { color: var(--crt-magenta); text-shadow: 0 0 10px var(--crt-magenta); }
+
+    /* Combo fire effect */
+    .hud-value.combo.on-fire {
+      animation: combo-fire 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes combo-fire {
+      0% { color: var(--crt-amber); text-shadow: 0 0 10px #ff6600, 0 0 20px #ff3300, 0 -10px 40px #ff6600; }
+      100% { color: #ffcc00; text-shadow: 0 0 15px #ff8800, 0 0 30px #ff4400, 0 -15px 50px #ff8800; }
+    }
+
+    /* Main typing area */
+    .typing-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+    }
+
+    /* Current word display */
+    .word-display {
+      font-size: 3.5em;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      min-height: 1.5em;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .char {
+      display: inline-block;
+      transition: all 0.1s ease;
+      position: relative;
+    }
+
+    .char.typed {
+      color: var(--crt-green);
+      text-shadow: 0 0 20px var(--crt-green);
+      animation: char-glow 0.3s ease-out;
+    }
+
+    .char.current {
+      color: var(--crt-amber);
+      animation: char-pulse 0.8s ease-in-out infinite;
+      text-shadow: 0 0 20px var(--crt-amber);
+    }
+
+    .char.pending {
+      color: rgba(0, 255, 65, 0.4);
+    }
+
+    .char.error {
+      color: var(--crt-red);
+      background: rgba(255, 0, 64, 0.3);
+      animation: char-error 0.3s ease-out;
+      text-shadow: 0 0 20px var(--crt-red);
+    }
+
+    @keyframes char-glow {
+      0% { transform: scale(1.3); color: white; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes char-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); color: white; }
+    }
+
+    @keyframes char-error {
+      0% { transform: scale(1.5) rotate(10deg); }
+      50% { transform: scale(1.2) rotate(-5deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    /* Word queue preview */
+    .word-queue {
+      font-size: 1.2em;
+      color: rgba(0, 255, 65, 0.3);
+      display: flex;
+      gap: 30px;
+    }
+
+    .queue-word {
+      opacity: 0.5;
+      transition: opacity 0.3s;
+    }
+
+    .queue-word:first-child { opacity: 0.7; }
+
+    /* Progress bar */
+    .progress-container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: rgba(0, 255, 65, 0.1);
+      border: 1px solid var(--crt-green);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--crt-green), var(--crt-cyan));
+      width: 0%;
+      transition: width 0.3s ease-out;
+      box-shadow: 0 0 10px var(--crt-green);
+    }
+
+    /* Lives display */
+    .lives {
+      display: flex;
+      gap: 8px;
+    }
+
+    .life {
+      font-size: 1.5em;
+      transition: all 0.3s;
+    }
+
+    .life.lost {
+      opacity: 0.2;
+      transform: scale(0.8);
+    }
+
+    /* =========================================================================
+       START SCREEN
+       ========================================================================= */
+    #start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+    }
+
+    #start-screen.hidden { display: none; }
+
+    .title {
+      font-size: 4em;
+      font-weight: bold;
+      text-align: center;
+      animation: title-glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes title-glow {
+      0% { text-shadow: 0 0 20px var(--crt-cyan), 0 0 40px var(--crt-cyan); color: var(--crt-cyan); }
+      100% { text-shadow: 0 0 30px var(--crt-magenta), 0 0 60px var(--crt-magenta); color: var(--crt-magenta); }
+    }
+
+    .subtitle {
+      font-size: 1.2em;
+      color: rgba(0, 255, 65, 0.7);
+    }
+
+    .mode-select {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 600px;
+    }
+
+    .mode-btn {
+      background: rgba(0, 255, 65, 0.1);
+      border: 2px solid var(--crt-green);
+      color: var(--crt-green);
+      padding: 20px;
+      font-family: inherit;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .mode-btn:hover {
+      background: rgba(0, 255, 65, 0.2);
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+    }
+
+    .mode-btn:active {
+      transform: scale(0.98);
+    }
+
+    .mode-name {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .mode-desc {
+      font-size: 0.85em;
+      opacity: 0.7;
+    }
+
+    .start-hint {
+      font-size: 0.9em;
+      color: rgba(0, 255, 65, 0.5);
+      animation: blink 1s steps(2) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* =========================================================================
+       GAME OVER SCREEN
+       ========================================================================= */
+    #game-over-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    #game-over-screen.hidden { display: none; }
+
+    .game-over-title {
+      font-size: 3em;
+      font-weight: bold;
+      color: var(--crt-red);
+      text-shadow: 0 0 30px var(--crt-red);
+    }
+
+    .game-over-title.victory {
+      color: var(--crt-amber);
+      text-shadow: 0 0 30px var(--crt-amber);
+      animation: victory-pulse 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes victory-pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+
+    .final-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      text-align: center;
+    }
+
+    .stat-item {
+      padding: 15px;
+      background: rgba(0, 255, 65, 0.05);
+      border: 1px solid rgba(0, 255, 65, 0.2);
+    }
+
+    .stat-label {
+      font-size: 0.8em;
+      color: rgba(0, 255, 65, 0.6);
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-size: 1.8em;
+      font-weight: bold;
+    }
+
+    .retry-btn {
+      background: rgba(0, 255, 65, 0.2);
+      border: 2px solid var(--crt-green);
+      color: var(--crt-green);
+      padding: 15px 40px;
+      font-family: inherit;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.2s;
+    }
+
+    .retry-btn:hover {
+      background: var(--crt-green);
+      color: black;
+    }
+
+    /* =========================================================================
+       BOSS DISPLAY
+       ========================================================================= */
+    .boss-container {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    .boss-container.hidden { display: none; }
+
+    .boss-name {
+      font-size: 1.5em;
+      color: var(--crt-red);
+      text-shadow: 0 0 20px var(--crt-red);
+      margin-bottom: 10px;
+    }
+
+    .boss-ascii {
+      font-size: 0.7em;
+      white-space: pre;
+      line-height: 1.1;
+      color: var(--crt-red);
+      text-shadow: 0 0 10px var(--crt-red);
+    }
+
+    .boss-hp-bar {
+      width: 300px;
+      height: 20px;
+      background: rgba(255, 0, 64, 0.2);
+      border: 2px solid var(--crt-red);
+      margin: 10px auto;
+    }
+
+    .boss-hp-fill {
+      height: 100%;
+      background: var(--crt-red);
+      transition: width 0.3s;
+      box-shadow: 0 0 15px var(--crt-red);
+    }
+
+    /* =========================================================================
+       FEVER MODE OVERLAY
+       ========================================================================= */
+    .fever-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 90;
+      background: radial-gradient(circle at center, transparent 30%, rgba(255, 0, 100, 0.1) 60%, rgba(255, 0, 100, 0.3) 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .fever-overlay.active {
+      opacity: 1;
+      animation: fever-pulse 0.3s ease-in-out infinite alternate;
+    }
+
+    @keyframes fever-pulse {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .fever-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 5em;
+      font-weight: bold;
+      color: var(--crt-magenta);
+      text-shadow: 0 0 30px var(--crt-magenta), 0 0 60px var(--crt-red);
+      pointer-events: none;
+      z-index: 500;
+      animation: fever-text-in 0.5s ease-out forwards;
+    }
+
+    .fever-text.hidden { display: none; }
+
+    @keyframes fever-text-in {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(3) rotate(-10deg); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+
+    /* =========================================================================
+       COMBO POPUP
+       ========================================================================= */
+    .combo-popup {
+      position: absolute;
+      font-size: 2.5em;
+      font-weight: bold;
+      animation: combo-popup 0.8s ease-out forwards;
+      pointer-events: none;
+      z-index: 300;
+    }
+
+    @keyframes combo-popup {
+      0% { opacity: 1; transform: scale(0.5) translateY(0); }
+      30% { transform: scale(1.3) translateY(-10px); }
+      100% { opacity: 0; transform: scale(1) translateY(-60px); }
+    }
+
+    /* =========================================================================
+       PARTICLES & SPARKS
+       ========================================================================= */
+    .spark {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--crt-amber);
+      border-radius: 50%;
+      animation: spark-fly 0.6s ease-out forwards;
+      box-shadow: 0 0 6px var(--crt-amber);
+    }
+
+    @keyframes spark-fly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(calc(var(--dx) * 1px), calc(var(--dy) * 1px)) scale(0); }
+    }
+
+    .particle {
+      position: absolute;
+      animation: particle-explode 1s ease-out forwards;
+    }
+
+    @keyframes particle-explode {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(calc(var(--dx) * 1px), calc(var(--dy) * 1px)) rotate(var(--rot)) scale(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Synthwave grid background -->
+    <canvas id="grid-canvas"></canvas>
+
+    <!-- CRT container -->
+    <div id="crt-container" class="flicker-ambient">
+      <div class="scanlines"></div>
+      <div class="particle-container" id="particles"></div>
+      <div class="fever-overlay" id="fever-overlay"></div>
+      <div class="fever-text hidden" id="fever-text">FEVER MODE</div>
+
+      <!-- Game UI -->
+      <div id="game-ui">
+        <!-- HUD -->
+        <div class="hud">
+          <div class="hud-item">
+            <div class="hud-label">Score</div>
+            <div class="hud-value score" id="score">0</div>
+          </div>
+          <div class="hud-item">
+            <div class="hud-label">Combo</div>
+            <div class="hud-value combo" id="combo">0</div>
+          </div>
+          <div class="hud-item">
+            <div class="hud-label">Multiplier</div>
+            <div class="hud-value" id="multiplier">1x</div>
+          </div>
+          <div class="hud-item">
+            <div class="hud-label">WPM</div>
+            <div class="hud-value wpm" id="wpm">0</div>
+          </div>
+          <div class="hud-item">
+            <div class="hud-label">Lives</div>
+            <div class="lives" id="lives"></div>
+          </div>
+        </div>
+
+        <!-- Boss display -->
+        <div class="boss-container hidden" id="boss-container">
+          <div class="boss-name" id="boss-name"></div>
+          <pre class="boss-ascii" id="boss-ascii"></pre>
+          <div class="boss-hp-bar">
+            <div class="boss-hp-fill" id="boss-hp"></div>
+          </div>
+        </div>
+
+        <!-- Main typing area -->
+        <div class="typing-area">
+          <div class="word-display" id="word-display"></div>
+          <div class="word-queue" id="word-queue"></div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Start screen -->
+      <div id="start-screen">
+        <div class="title">RETRO TYPING ARENA</div>
+        <div class="subtitle">Test your typing skills in the neon void</div>
+        <div class="mode-select">
+          <button class="mode-btn" data-mode="SURVIVAL">
+            <div class="mode-name">SURVIVAL</div>
+            <div class="mode-desc">Endless mode - words get harder, speed increases. 3 lives.</div>
+          </button>
+          <button class="mode-btn" data-mode="TIME_ATTACK">
+            <div class="mode-name">TIME ATTACK</div>
+            <div class="mode-desc">60 seconds to maximize your score!</div>
+          </button>
+          <button class="mode-btn" data-mode="PERFECT_RUN">
+            <div class="mode-name">PERFECT RUN</div>
+            <div class="mode-desc">One mistake = Game Over. How far can you go?</div>
+          </button>
+          <button class="mode-btn" data-mode="BOSS_BATTLE">
+            <div class="mode-name">BOSS BATTLE</div>
+            <div class="mode-desc">Defeat ASCII art bosses by typing their attacks!</div>
+          </button>
+        </div>
+        <div class="start-hint">Click a mode to begin</div>
+      </div>
+
+      <!-- Game over screen -->
+      <div id="game-over-screen" class="hidden">
+        <div class="game-over-title" id="game-over-title">GAME OVER</div>
+        <div class="final-stats" id="final-stats"></div>
+        <button class="retry-btn" id="retry-btn">PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // SYNTHWAVE GRID SYSTEM
+    // =========================================================================
+    const Grid = (() => {
+      const CONFIG = {
+        grid: { horizontalLines: 35, verticalLines: 25, horizonY: 0.35, perspectiveStrength: 2.5, baseSpeed: 0.5 },
+        wave: { amplitude: 12, frequency: 0.02, pulseDecay: 0.95, pulseStrength: 40 },
+        particles: { count: 120, minSize: 0.5, maxSize: 3 },
+        sun: { baseRadius: 70, glowLayers: 5 },
+        colors: { cyan: {r:0,g:255,b:255}, magenta: {r:255,g:0,b:128}, gold: {r:255,g:215,b:0} }
+      };
+
+      let state = { canvas: null, ctx: null, width: 0, height: 0, time: 0, lastFrame: 0, wpm: 0, combo: 0,
+        pulseWaves: [], shakeOffset: {x:0,y:0}, shakeIntensity: 0, gridSpeed: 0.5, gridOffset: 0, warpFactor: 0, particles: [] };
+
+      function lerp(a, b, t) { return a + (b - a) * Math.max(0, Math.min(1, t)); }
+      function lerpColor(c1, c2, t) { return {r: Math.round(lerp(c1.r, c2.r, t)), g: Math.round(lerp(c1.g, c2.g, t)), b: Math.round(lerp(c1.b, c2.b, t))}; }
+      function colorStr(c, a=1) { return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+      function getComboColor(combo) {
+        const {cyan, magenta, gold} = CONFIG.colors;
+        if (combo < 10) return lerpColor(cyan, magenta, combo/10);
+        if (combo < 30) return lerpColor(magenta, gold, (combo-10)/20);
+        const pulse = Math.sin(state.time * 5) * 0.5 + 0.5;
+        return lerpColor(gold, {r:255,g:255,b:255}, pulse * 0.3);
+      }
+
+      function createParticle() {
+        return { x: Math.random() * state.width, y: Math.random() * state.height * 0.35, z: Math.random(),
+          size: CONFIG.particles.minSize + Math.random() * (CONFIG.particles.maxSize - CONFIG.particles.minSize),
+          speed: 0.2 + Math.random() * 1.3, twinkle: Math.random() * Math.PI * 2, twinkleSpeed: 0.02 + Math.random() * 0.08 };
+      }
+
+      function initParticles() { state.particles = []; for (let i = 0; i < CONFIG.particles.count; i++) state.particles.push(createParticle()); }
+
+      function drawParticles(ctx, dt) {
+        const comboColor = getComboColor(state.combo);
+        const warpMult = 1 + state.warpFactor * 15;
+        state.particles.forEach(p => {
+          p.x -= p.speed * (1 - p.z * 0.5) * warpMult * dt * 60;
+          p.twinkle += p.twinkleSpeed;
+          if (p.x < -50) { p.x = state.width + 50; p.y = Math.random() * state.height * 0.35; }
+          const twinkle = (Math.sin(p.twinkle) + 1) / 2;
+          const alpha = 0.3 + twinkle * 0.7;
+          const size = p.size * (0.8 + twinkle * 0.4);
+          const stretch = 1 + state.warpFactor * 15 * (1 - p.z);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.scale(stretch, 1);
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 3);
+          grad.addColorStop(0, colorStr(comboColor, alpha));
+          grad.addColorStop(1, colorStr(comboColor, 0));
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      function drawSun(ctx) {
+        const {baseRadius, glowLayers} = CONFIG.sun;
+        const centerX = state.width / 2, horizonY = state.height * CONFIG.grid.horizonY;
+        const centerY = horizonY - baseRadius * 0.3;
+        const comboMult = 1 + Math.min(state.combo / 20, 2);
+        const radius = baseRadius * comboMult;
+        const comboColor = getComboColor(state.combo);
+        const pulse = Math.sin(state.time * 2) * 0.1 + 1;
+
+        ctx.save();
+        ctx.translate(centerX + state.shakeOffset.x * 0.5, centerY + state.shakeOffset.y * 0.5);
+
+        for (let i = glowLayers; i >= 0; i--) {
+          const glowR = radius * pulse * (1 + i * 0.5);
+          const alpha = 0.15 / (i + 1);
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+          grad.addColorStop(0, colorStr(comboColor, alpha));
+          grad.addColorStop(1, colorStr(comboColor, 0));
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const sunGrad = ctx.createRadialGradient(0, -radius * 0.3, 0, 0, 0, radius * pulse);
+        sunGrad.addColorStop(0, '#ffffff');
+        sunGrad.addColorStop(0.3, colorStr(comboColor, 1));
+        sunGrad.addColorStop(1, colorStr({r:138,g:43,b:226}, 0.8));
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horizontal stripes
+        ctx.globalCompositeOperation = 'destination-out';
+        const stripeCount = 8, stripeH = (radius * 2) / (stripeCount * 2);
+        for (let i = 0; i < stripeCount; i++) {
+          const y = -radius + stripeH * (i * 2 + 1) + (state.time * 20 % stripeH);
+          const stripeW = Math.sqrt(radius * radius - y * y) * 2;
+          if (stripeW > 0 && y > -radius && y < radius) {
+            ctx.fillStyle = `rgba(0,0,0,${0.3 + i * 0.05})`;
+            ctx.fillRect(-stripeW / 2, y, stripeW, stripeH * 0.6);
+          }
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
+      }
+
+      function drawGrid(ctx, dt) {
+        const {horizontalLines, verticalLines, horizonY, perspectiveStrength} = CONFIG.grid;
+        const {amplitude, frequency} = CONFIG.wave;
+        const horizon = state.height * horizonY;
+        const gridHeight = state.height - horizon;
+        const comboColor = getComboColor(state.combo);
+
+        state.gridOffset += state.gridSpeed * dt * 60;
+        if (state.gridOffset > gridHeight / horizontalLines) state.gridOffset = 0;
+
+        ctx.save();
+        ctx.translate(state.shakeOffset.x, state.shakeOffset.y);
+
+        // Pulse wave influence
+        function getPulse(x, y) {
+          let total = 0;
+          state.pulseWaves.forEach(w => {
+            const dist = Math.sqrt((x - w.x) ** 2 + (y - w.y) ** 2);
+            const waveDist = Math.abs(dist - w.radius);
+            if (waveDist < w.width) total += (1 - waveDist / w.width) * w.strength * (w.type === 'error' ? -1 : 1);
+          });
+          return total;
+        }
+
+        // Horizontal lines
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i <= horizontalLines; i++) {
+          const normY = (i / horizontalLines + state.gridOffset / (gridHeight / horizontalLines) * (1 / horizontalLines)) % 1;
+          const perspY = Math.pow(normY, perspectiveStrength);
+          const y = horizon + perspY * gridHeight;
+          const alpha = 0.2 + perspY * 0.8;
+
+          ctx.beginPath();
+          for (let x = 0; x <= state.width; x += 5) {
+            const waveOff = Math.sin(x * frequency + state.time * 2) * amplitude * perspY;
+            const pulseOff = getPulse(x, y) * 15;
+            if (x === 0) ctx.moveTo(x, y + waveOff + pulseOff);
+            else ctx.lineTo(x, y + waveOff + pulseOff);
+          }
+          ctx.shadowColor = colorStr(comboColor, 0.8);
+          ctx.shadowBlur = 10 + state.combo * 0.3;
+          ctx.strokeStyle = colorStr(comboColor, alpha);
+          ctx.stroke();
+        }
+
+        // Vertical lines
+        const vanishX = state.width / 2;
+        for (let i = 0; i <= verticalLines; i++) {
+          const normX = i / verticalLines;
+          const bottomX = normX * state.width;
+          const convergeFactor = 0.3 + state.warpFactor * 0.2;
+          const topX = lerp(vanishX, bottomX, convergeFactor);
+
+          ctx.beginPath();
+          for (let j = 0; j <= 30; j++) {
+            const t = j / 30;
+            const perspT = Math.pow(t, 1 / perspectiveStrength);
+            const x = lerp(topX, bottomX, perspT);
+            const y = lerp(horizon, state.height, t);
+            const waveOff = Math.sin(y * 0.01 + state.time * 3 + normX * Math.PI * 2) * 8 * t;
+            const pulseOff = getPulse(x, y) * 10;
+            if (j === 0) ctx.moveTo(x + waveOff + pulseOff, y);
+            else ctx.lineTo(x + waveOff + pulseOff, y);
+          }
+          const alpha = 0.3 + Math.abs(normX - 0.5) * 0.4;
+          ctx.shadowColor = colorStr(comboColor, 0.6);
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = colorStr(comboColor, alpha);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawBackground(ctx) {
+        const grad = ctx.createLinearGradient(0, 0, 0, state.height);
+        grad.addColorStop(0, '#0a0015');
+        grad.addColorStop(0.3, '#1a0030');
+        grad.addColorStop(0.5, '#2a0050');
+        grad.addColorStop(1, '#0a0015');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, state.width, state.height);
+
+        const horizonY = state.height * CONFIG.grid.horizonY;
+        const comboColor = getComboColor(state.combo);
+        const horizonGlow = ctx.createRadialGradient(state.width/2, horizonY, 0, state.width/2, horizonY, state.width * 0.8);
+        horizonGlow.addColorStop(0, colorStr(comboColor, 0.3));
+        horizonGlow.addColorStop(0.3, colorStr(comboColor, 0.1));
+        horizonGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = horizonGlow;
+        ctx.fillRect(0, 0, state.width, state.height);
+      }
+
+      function drawScanlines(ctx) {
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        for (let y = 0; y < state.height; y += 4) ctx.fillRect(0, y, state.width, 2);
+      }
+
+      function updatePulseWaves(dt) {
+        state.pulseWaves = state.pulseWaves.filter(w => {
+          w.radius += w.speed * dt * 60;
+          w.strength *= CONFIG.wave.pulseDecay;
+          w.width *= 1.02;
+          return w.strength > 0.01 && w.radius < Math.max(state.width, state.height);
+        });
+      }
+
+      function updateShake() {
+        if (state.shakeIntensity > 0.1) {
+          state.shakeOffset.x = (Math.random() - 0.5) * state.shakeIntensity * 2;
+          state.shakeOffset.y = (Math.random() - 0.5) * state.shakeIntensity * 2;
+          state.shakeIntensity *= 0.9;
+        } else {
+          state.shakeOffset.x = state.shakeOffset.y = state.shakeIntensity = 0;
+        }
+      }
+
+      function render(timestamp) {
+        if (!state.canvas) return;
+        const dt = Math.min((timestamp - state.lastFrame) / 1000, 0.1);
+        state.lastFrame = timestamp;
+        state.time += dt;
+
+        updateShake();
+        updatePulseWaves(dt);
+        state.gridSpeed = lerp(state.gridSpeed, CONFIG.grid.baseSpeed * (1 + state.wpm / 50), 0.05);
+        state.warpFactor = lerp(state.warpFactor, state.wpm >= 80 ? Math.min((state.wpm - 80) / 50, 1) : 0, 0.05);
+
+        const ctx = state.ctx;
+        ctx.clearRect(0, 0, state.width, state.height);
+        drawBackground(ctx);
+        drawParticles(ctx, dt);
+        drawSun(ctx);
+        drawGrid(ctx, dt);
+        drawScanlines(ctx);
+
+        requestAnimationFrame(render);
+      }
+
+      return {
+        init(canvas) {
+          state.canvas = canvas;
+          state.ctx = canvas.getContext('2d');
+          function resize() {
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            state.ctx.scale(dpr, dpr);
+            state.width = rect.width;
+            state.height = rect.height;
+          }
+          resize();
+          window.addEventListener('resize', resize);
+          initParticles();
+          state.lastFrame = performance.now();
+          requestAnimationFrame(render);
+        },
+        update(wpm, combo) { state.wpm = wpm; state.combo = combo; },
+        pulse(type, x, y) {
+          const configs = { keystroke: {strength:0.5,speed:8,width:50}, error: {strength:1,speed:12,width:80},
+            wordComplete: {strength:0.8,speed:10,width:70}, levelUp: {strength:1.5,speed:15,width:120} };
+          const cfg = configs[type] || configs.keystroke;
+          state.pulseWaves.push({ x: x ?? state.width/2, y: y ?? state.height*0.7, radius: 0,
+            strength: cfg.strength * CONFIG.wave.pulseStrength, speed: cfg.speed, width: cfg.width, type });
+          if (type === 'error') state.shakeIntensity = Math.max(state.shakeIntensity, 15);
+        }
+      };
+    })();
+
+    // =========================================================================
+    // AUDIO SYSTEM
+    // =========================================================================
+    const Audio = (() => {
+      let ctx = null, masterGain = null, compressor = null, initialized = false;
+      let crtHumGain = null, crtNoiseGain = null, isFeverMode = false;
+
+      function createNoiseBuffer(duration) {
+        const length = ctx.sampleRate * duration;
+        const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+        return buffer;
+      }
+
+      function makeDistortion(amount) {
+        const curve = new Float32Array(44100);
+        for (let i = 0; i < 44100; i++) {
+          const x = (i * 2) / 44100 - 1;
+          curve[i] = ((3 + amount) * x * 20 * Math.PI / 180) / (Math.PI + amount * Math.abs(x));
+        }
+        return curve;
+      }
+
+      function initCRTHum() {
+        const hum60 = ctx.createOscillator(); hum60.type = 'sine'; hum60.frequency.value = 60;
+        const hum120 = ctx.createOscillator(); hum120.type = 'sine'; hum120.frequency.value = 120;
+        const humHigh = ctx.createOscillator(); humHigh.type = 'sine'; humHigh.frequency.value = 15734;
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = createNoiseBuffer(2);
+        noise.loop = true;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 3000; noiseFilter.Q.value = 0.5;
+
+        crtHumGain = ctx.createGain(); crtHumGain.gain.value = 0.02;
+        crtNoiseGain = ctx.createGain(); crtNoiseGain.gain.value = 0.05;
+        const hum60Gain = ctx.createGain(); hum60Gain.gain.value = 0.4;
+        const hum120Gain = ctx.createGain(); hum120Gain.gain.value = 0.2;
+        const humHighGain = ctx.createGain(); humHighGain.gain.value = 0.03;
+
+        hum60.connect(hum60Gain); hum120.connect(hum120Gain); humHigh.connect(humHighGain);
+        noise.connect(noiseFilter); noiseFilter.connect(crtNoiseGain);
+        hum60Gain.connect(crtHumGain); hum120Gain.connect(crtHumGain); humHighGain.connect(crtHumGain);
+        crtNoiseGain.connect(crtHumGain);
+        crtHumGain.connect(compressor);
+
+        hum60.start(); hum120.start(); humHigh.start(); noise.start();
+      }
+
+      return {
+        async init() {
+          if (initialized) return;
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+          masterGain = ctx.createGain(); masterGain.gain.value = 0.7; masterGain.connect(ctx.destination);
+          compressor = ctx.createDynamicsCompressor();
+          compressor.threshold.value = -24; compressor.knee.value = 30; compressor.ratio.value = 12;
+          compressor.attack.value = 0.003; compressor.release.value = 0.25;
+          compressor.connect(masterGain);
+          initCRTHum();
+          initialized = true;
+        },
+
+        playKeystroke(correct = true) {
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const pitch = 0.9 + Math.random() * 0.2;
+
+          if (correct) {
+            // Click
+            const click = ctx.createOscillator(); click.type = 'square'; click.frequency.value = 3500 * pitch;
+            const clickGain = ctx.createGain();
+            clickGain.gain.setValueAtTime(0, now);
+            clickGain.gain.linearRampToValueAtTime(0.15, now + 0.001);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            click.connect(clickGain); clickGain.connect(compressor);
+            click.start(now); click.stop(now + 0.05);
+
+            // Thock
+            const thock = ctx.createOscillator(); thock.type = 'sine'; thock.frequency.value = 180 * pitch;
+            const thockGain = ctx.createGain();
+            thockGain.gain.setValueAtTime(0, now);
+            thockGain.gain.linearRampToValueAtTime(0.25, now + 0.005);
+            thockGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            thock.connect(thockGain); thockGain.connect(compressor);
+            thock.start(now); thock.stop(now + 0.1);
+
+            // Fever sparkle
+            if (isFeverMode) {
+              const sparkle = ctx.createOscillator(); sparkle.type = 'sine';
+              sparkle.frequency.value = 2000 + Math.random() * 2000;
+              const sparkleGain = ctx.createGain();
+              sparkleGain.gain.setValueAtTime(0.1, now);
+              sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+              sparkle.connect(sparkleGain); sparkleGain.connect(compressor);
+              sparkle.start(now); sparkle.stop(now + 0.15);
+            }
+          } else {
+            // Error buzz
+            const buzz = ctx.createOscillator(); buzz.type = 'sawtooth';
+            buzz.frequency.setValueAtTime(400, now);
+            buzz.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+            const distortion = ctx.createWaveShaper(); distortion.curve = makeDistortion(50);
+            const buzzGain = ctx.createGain();
+            buzzGain.gain.setValueAtTime(0.3, now);
+            buzzGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            buzz.connect(distortion); distortion.connect(buzzGain); buzzGain.connect(compressor);
+            buzz.start(now); buzz.stop(now + 0.4);
+
+            // Static
+            const staticNoise = ctx.createBufferSource();
+            staticNoise.buffer = createNoiseBuffer(0.2);
+            const staticGain = ctx.createGain();
+            staticGain.gain.setValueAtTime(0.4, now);
+            staticGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            staticNoise.connect(staticGain); staticGain.connect(compressor);
+            staticNoise.start(now);
+          }
+        },
+
+        playWordComplete(combo = 1) {
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const notes = [0, 4, 7, 12];
+          const baseFreq = 523.25;
+
+          notes.forEach((semitone, i) => {
+            const freq = baseFreq * Math.pow(2, semitone / 12);
+            const delay = i * 0.05;
+            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0, now + delay);
+            gain.gain.linearRampToValueAtTime(0.15, now + delay + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.3);
+            osc.connect(gain); gain.connect(compressor);
+            osc.start(now + delay); osc.stop(now + delay + 0.4);
+          });
+
+          // Combo fanfares
+          if (combo >= 10) {
+            const fanfareNotes = combo >= 50 ? [0,4,7,11,12,16,19,24] : combo >= 25 ? [0,4,7,11,12,16] : [0,4,7,12];
+            const baseF = combo >= 50 ? 1046.5 : combo >= 25 ? 880 : 660;
+            fanfareNotes.forEach((s, i) => {
+              const f = baseF * Math.pow(2, s/12);
+              const d = 0.3 + i * 0.06;
+              const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = f;
+              const g = ctx.createGain();
+              g.gain.setValueAtTime(0, now+d);
+              g.gain.linearRampToValueAtTime(0.12, now+d+0.02);
+              g.gain.exponentialRampToValueAtTime(0.001, now+d+0.5);
+              o.connect(g); g.connect(compressor);
+              o.start(now+d); o.stop(now+d+0.6);
+            });
+          }
+        },
+
+        playLevelComplete() {
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const melody = [{n:0,t:0},{n:4,t:0.15},{n:7,t:0.3},{n:12,t:0.45},{n:9,t:0.6},{n:12,t:0.75},{n:16,t:0.9,dur:0.5}];
+          melody.forEach(({n,t,dur=0.15}) => {
+            const freq = 523.25 * Math.pow(2, n/12);
+            const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = freq;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, now+t);
+            g.gain.linearRampToValueAtTime(0.2, now+t+0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, now+t+dur);
+            o.connect(g); g.connect(compressor);
+            o.start(now+t); o.stop(now+t+dur+0.1);
+          });
+        },
+
+        playLevelFail() {
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          [0,-1,-3,-5,-7,-12].forEach((n,i) => {
+            const freq = 261.63 * Math.pow(2, n/12);
+            const t = i * 0.2;
+            const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.25, now+t);
+            g.gain.exponentialRampToValueAtTime(0.001, now+t+0.35);
+            o.connect(g); g.connect(compressor);
+            o.start(now+t); o.stop(now+t+0.4);
+          });
+        },
+
+        triggerFeverMode() {
+          if (!ctx || isFeverMode) return;
+          isFeverMode = true;
+          const now = ctx.currentTime;
+          // Explosion
+          const burst = ctx.createBufferSource(); burst.buffer = createNoiseBuffer(0.5);
+          const burstFilter = ctx.createBiquadFilter();
+          burstFilter.type = 'lowpass';
+          burstFilter.frequency.setValueAtTime(8000, now);
+          burstFilter.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+          const burstGain = ctx.createGain();
+          burstGain.gain.setValueAtTime(0.6, now);
+          burstGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          burst.connect(burstFilter); burstFilter.connect(burstGain); burstGain.connect(compressor);
+          burst.start(now);
+          // Power chord
+          [130.81, 196, 261.63, 329.63].forEach(freq => {
+            const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = freq;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, now+0.1);
+            g.gain.linearRampToValueAtTime(0.15, now+0.12);
+            g.gain.exponentialRampToValueAtTime(0.001, now+0.8);
+            o.connect(g); g.connect(compressor);
+            o.start(now+0.1); o.stop(now+0.85);
+          });
+          if (crtHumGain) crtHumGain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+        },
+
+        deactivateFeverMode() {
+          isFeverMode = false;
+          if (crtHumGain && ctx) crtHumGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 0.5);
+        },
+
+        setIntensity(wpm, combo) {
+          if (!ctx || !crtHumGain) return;
+          const humLevel = Math.min(0.1, 0.02 + (wpm / 150) * 0.06);
+          crtHumGain.gain.linearRampToValueAtTime(humLevel, ctx.currentTime + 0.1);
+          if (crtNoiseGain) {
+            const noiseLevel = Math.min(0.12, 0.03 + (wpm / 120) * 0.07);
+            crtNoiseGain.gain.linearRampToValueAtTime(noiseLevel, ctx.currentTime + 0.1);
+          }
+        }
+      };
+    })();
+
+    // =========================================================================
+    // GAME ENGINE
+    // =========================================================================
+    const WORD_BANKS = {
+      easy: ['cat','dog','run','jump','code','type','fast','slow','game','play','win','lose','key','word','text','fire','ice','hot','cold','big','small','red','blue','green','black','white','up','down','left','right','go','stop','yes','no','hit','miss','good','bad','new','old'],
+      medium: ['function','variable','constant','keyboard','monitor','computer','program','algorithm','developer','challenge','precision','accuracy','velocity','momentum','intensity','frequency','amplitude','spectrum','terminal','interface','protocol','sequence','parallel','recursive','iteration','compiler','debugger','framework','library','module','package','deploy'],
+      hard: ['asynchronous','polymorphism','encapsulation','authentication','authorization','infrastructure','microservices','containerization','virtualization','orchestration','optimization','implementation','configuration','serialization','deserialization','concatenation','interpolation','extrapolation','acceleration','deceleration','synchronization','initialization','instantiation','multiplication'],
+      insane: ['antidisestablishmentarianism','pseudopseudohypoparathyroidism','floccinaucinihilipilification','incomprehensibilities','electroencephalographically','immunoelectrophoretically'],
+      programming: ['const','let','var','function','return','async','await','promise','class','extends','implements','interface','export','import','default','static','public','private','protected','readonly','abstract','override','typeof','instanceof','null','undefined','boolean','number','string','object','array','map','set','symbol','console.log','document.getElementById','addEventListener','querySelector','setTimeout','setInterval','JSON.parse','JSON.stringify','Object.keys','Array.from','Math.random','Math.floor']
+    };
+
+    const BOSSES = {
+      1: { name: 'SYNTAX ERROR', ascii: '    (╯°□°)╯︵ ┻━┻\n     SYNTAX ERROR', maxHp: 100, phrases: ['unexpected token','missing semicolon','null pointer','stack overflow','type error'], attackInterval: 6000 },
+      2: { name: 'MEMORY LEAK', ascii: '  ░░░▓▓▓███████▓▓▓░░\n      MEMORY LEAK', maxHp: 200, phrases: ['heap allocation failed','out of memory','garbage collection','buffer overflow','segmentation fault'], attackInterval: 5500 },
+      3: { name: 'INFINITE LOOP', ascii: '  while(true) {\n    INFINITE LOOP\n  }', maxHp: 350, phrases: ['while true forever','recursion overflow','call stack exceeded','process not responding','ctrl alt delete'], attackInterval: 5000 },
+      4: { name: 'RACE CONDITION', ascii: '  T1=>T2<=T3=>T4\n   RACE CONDITION', maxHp: 500, phrases: ['deadlock detected','mutex timeout','concurrent modification','thread sync failed','critical section'], attackInterval: 4500 },
+      5: { name: 'LEGACY CODE', ascii: '  // TODO: refactor someday\n  // WARNING: HERE BE DRAGONS\n    L E G A C Y   C O D E', maxHp: 1000, phrases: ['magic number found','deprecated function','spaghetti code','technical debt','goto considered harmful'], attackInterval: 4000 }
+    };
+
+    const GAME_MODES = {
+      SURVIVAL: { name: 'SURVIVAL', hasTimer: false, hasLives: true, initialLives: 3, speedIncrease: true, difficultyProgression: true },
+      TIME_ATTACK: { name: 'TIME ATTACK', hasTimer: true, duration: 60000, hasLives: false, speedIncrease: false, difficultyProgression: false },
+      PERFECT_RUN: { name: 'PERFECT RUN', hasTimer: false, hasLives: true, initialLives: 1, speedIncrease: true, difficultyProgression: true },
+      BOSS_BATTLE: { name: 'BOSS BATTLE', hasTimer: false, hasLives: true, initialLives: 5, speedIncrease: false, difficultyProgression: false, isBossBattle: true }
+    };
+
+    const Game = (() => {
+      let state = {
+        isRunning: false, isPaused: false, gameMode: null,
+        score: 0, combo: 0, maxCombo: 0, multiplier: 1, isFeverMode: false,
+        level: 1, wordsCompleted: 0, totalChars: 0, correctChars: 0, incorrectChars: 0,
+        lives: 0, maxLives: 0, timeRemaining: 0, startTime: 0,
+        currentWord: null, currentWordIndex: 0, wordQueue: [],
+        keystrokeTimestamps: [], wpm: 0, peakWpm: 0,
+        currentDifficulty: 'easy', wordSpeed: 1.0,
+        currentBoss: null, bossHp: 0, bossMaxHp: 0, bossLevel: 0
+      };
+      let timers = { game: null, wpm: null, difficulty: null, bossAttack: null };
+      const listeners = {};
+
+      function emit(event, data) {
+        if (listeners[event]) listeners[event].forEach(fn => fn(data));
+      }
+
+      function generateWord() {
+        const diff = state.currentDifficulty;
+        let pool = state.level % 3 === 0 ? WORD_BANKS.programming : WORD_BANKS[diff];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      function fillQueue() {
+        while (state.wordQueue.length < 5) state.wordQueue.push(generateWord());
+      }
+
+      function nextWord() {
+        state.currentWord = state.wordQueue.length > 0 ? state.wordQueue.shift() : generateWord();
+        state.currentWordIndex = 0;
+        fillQueue();
+        emit('newWord', { word: state.currentWord, queue: state.wordQueue });
+      }
+
+      function calculatePoints() {
+        let points = 10 * state.multiplier;
+        if (state.isFeverMode) points *= 2;
+        if (state.wpm > 60) points *= (1 + (state.wpm - 60) / 100);
+        return Math.floor(points);
+      }
+
+      function updateMultiplier() {
+        const newMult = Math.min(1 + Math.floor(state.combo / 5), 10);
+        if (newMult !== state.multiplier) {
+          state.multiplier = newMult;
+          emit('multiplierChange', { multiplier: state.multiplier });
+        }
+      }
+
+      function updateWpm() {
+        const now = Date.now();
+        state.keystrokeTimestamps = state.keystrokeTimestamps.filter(ts => ts > now - 5000);
+        state.wpm = Math.floor((state.keystrokeTimestamps.length / (5000 / 60000)) / 5);
+        state.peakWpm = Math.max(state.peakWpm, state.wpm);
+        emit('wpmUpdate', { wpm: state.wpm, peak: state.peakWpm });
+      }
+
+      function increaseDifficulty() {
+        const diffs = ['easy', 'medium', 'hard', 'insane'];
+        const idx = diffs.indexOf(state.currentDifficulty);
+        if (idx < diffs.length - 1) state.currentDifficulty = diffs[idx + 1];
+        state.wordSpeed = Math.min(state.wordSpeed + 0.1, 3.0);
+        emit('difficultyChange', { difficulty: state.currentDifficulty });
+      }
+
+      function levelUp() {
+        state.level++;
+        if (state.level % 5 === 0) increaseDifficulty();
+        if (GAME_MODES[state.gameMode].speedIncrease) state.wordSpeed = Math.min(state.wordSpeed + 0.05, 3.0);
+        emit('levelUp', { level: state.level });
+      }
+
+      function initBoss(level) {
+        const boss = BOSSES[level];
+        if (!boss) return;
+        state.currentBoss = boss;
+        state.bossHp = boss.maxHp;
+        state.bossMaxHp = boss.maxHp;
+        state.bossLevel = level;
+        state.currentWord = boss.phrases[Math.floor(Math.random() * boss.phrases.length)];
+        state.currentWordIndex = 0;
+        state.wordQueue = [];
+        // Grace period before first attack (1.5x normal interval)
+        setTimeout(() => {
+          if (state.currentBoss && state.isRunning) {
+            timers.bossAttack = setInterval(() => bossAttack(), boss.attackInterval);
+          }
+        }, boss.attackInterval * 1.5);
+        emit('bossAppear', { boss: { name: boss.name, ascii: boss.ascii, hp: boss.maxHp, level } });
+        emit('newWord', { word: state.currentWord, queue: [], isBoss: true });
+      }
+
+      function bossAttack() {
+        if (!state.currentBoss || !state.isRunning) return;
+        state.lives--;
+        emit('bossAttack', { livesRemaining: state.lives });
+        if (state.lives <= 0) { endGame('boss_defeated_you'); return; }
+        state.currentWord = state.currentBoss.phrases[Math.floor(Math.random() * state.currentBoss.phrases.length)];
+        state.currentWordIndex = 0;
+        emit('newWord', { word: state.currentWord, queue: [], isBoss: true });
+        emit('lifeLost', { livesRemaining: state.lives });
+      }
+
+      function damageBoss(damage) {
+        if (!state.currentBoss) return;
+        const actual = damage * state.multiplier;
+        state.bossHp = Math.max(0, state.bossHp - actual);
+        emit('bossDamage', { damage: actual, remainingHp: state.bossHp, maxHp: state.bossMaxHp });
+        if (state.bossHp <= 0) {
+          clearInterval(timers.bossAttack);
+          const bonus = state.bossMaxHp * 10 * state.bossLevel;
+          state.score += bonus;
+          emit('bossDefeated', { boss: state.currentBoss.name, bonus, level: state.bossLevel });
+          if (state.gameMode === 'BOSS_BATTLE') {
+            const nextLevel = state.bossLevel + 1;
+            if (BOSSES[nextLevel]) setTimeout(() => { state.currentBoss = null; initBoss(nextLevel); }, 2000);
+            else endGame('victory');
+          } else {
+            state.currentBoss = null;
+            fillQueue();
+            nextWord();
+          }
+        } else {
+          state.currentWord = state.currentBoss.phrases[Math.floor(Math.random() * state.currentBoss.phrases.length)];
+          state.currentWordIndex = 0;
+          emit('newWord', { word: state.currentWord, queue: [], isBoss: true });
+        }
+      }
+
+      function stopTimers() {
+        Object.values(timers).forEach(t => { if (t) clearInterval(t); });
+        timers = { game: null, wpm: null, difficulty: null, bossAttack: null };
+      }
+
+      function startGame(mode) {
+        if (!GAME_MODES[mode]) return;
+        stopTimers();
+        const cfg = GAME_MODES[mode];
+        state = {
+          isRunning: true, isPaused: false, gameMode: mode,
+          score: 0, combo: 0, maxCombo: 0, multiplier: 1, isFeverMode: false,
+          level: 1, wordsCompleted: 0, totalChars: 0, correctChars: 0, incorrectChars: 0,
+          lives: cfg.hasLives ? cfg.initialLives : 0, maxLives: cfg.hasLives ? cfg.initialLives : 0,
+          timeRemaining: cfg.hasTimer ? cfg.duration : 0, startTime: Date.now(),
+          currentWord: null, currentWordIndex: 0, wordQueue: [],
+          keystrokeTimestamps: [], wpm: 0, peakWpm: 0,
+          currentDifficulty: 'easy', wordSpeed: 1.0,
+          currentBoss: null, bossHp: 0, bossMaxHp: 0, bossLevel: 0
+        };
+        if (cfg.hasTimer) {
+          timers.game = setInterval(() => {
+            state.timeRemaining -= 100;
+            emit('timerTick', { remaining: state.timeRemaining });
+            if (state.timeRemaining <= 0) endGame('time_up');
+          }, 100);
+        }
+        timers.wpm = setInterval(updateWpm, 500);
+        if (cfg.difficultyProgression) timers.difficulty = setInterval(increaseDifficulty, 30000);
+        if (cfg.isBossBattle) initBoss(1);
+        else { fillQueue(); nextWord(); }
+        emit('gameStart', { mode, config: cfg });
+      }
+
+      function endGame(reason = 'unknown') {
+        if (!state.isRunning) return;
+        state.isRunning = false;
+        const elapsed = Date.now() - state.startTime;
+        stopTimers();
+        const accuracy = state.totalChars > 0 ? (state.correctChars / state.totalChars * 100).toFixed(1) : 0;
+        const avgWpm = elapsed > 0 ? Math.floor((state.correctChars / 5) / (elapsed / 60000)) : 0;
+        emit('gameOver', { reason, stats: { score: state.score, wordsCompleted: state.wordsCompleted, maxCombo: state.maxCombo, accuracy: parseFloat(accuracy), peakWpm: state.peakWpm, avgWpm, level: state.level } });
+      }
+
+      function processKeystroke(char) {
+        if (!state.isRunning || !state.currentWord) return { accepted: false };
+        const expected = state.currentWord[state.currentWordIndex];
+        const correct = char === expected;
+        state.totalChars++;
+        state.keystrokeTimestamps.push(Date.now());
+
+        if (correct) {
+          state.correctChars++;
+          state.currentWordIndex++;
+          state.combo++;
+          state.maxCombo = Math.max(state.maxCombo, state.combo);
+          updateMultiplier();
+          const wasFever = state.isFeverMode;
+          state.isFeverMode = state.combo >= 50;
+          if (state.isFeverMode && !wasFever) emit('feverModeStart', { combo: state.combo });
+          const points = calculatePoints();
+          state.score += points;
+          const wordDone = state.currentWordIndex >= state.currentWord.length;
+          if (wordDone) {
+            state.wordsCompleted++;
+            state.score += state.currentWord.length * 5 * state.multiplier;
+            emit('wordComplete', { word: state.currentWord, wordsCompleted: state.wordsCompleted });
+            if (state.currentBoss) damageBoss(state.currentWord.length * 2);
+            else { if (state.wordsCompleted % 10 === 0) levelUp(); nextWord(); }
+          }
+          emit('correctKeystroke', { char, combo: state.combo, points, wordDone, position: state.currentWordIndex - 1 });
+          emit('scoreChange', { score: state.score, points });
+          emit('comboChange', { combo: state.combo, multiplier: state.multiplier });
+          return { accepted: true, correct: true, points, wordDone, combo: state.combo };
+        } else {
+          state.incorrectChars++;
+          const prevCombo = state.combo;
+          state.combo = 0;
+          state.multiplier = 1;
+          if (state.isFeverMode) { state.isFeverMode = false; emit('feverModeEnd', { prevCombo }); }
+          const cfg = GAME_MODES[state.gameMode];
+          let gameOver = false;
+          if (cfg.hasLives) {
+            state.lives--;
+            emit('lifeLost', { livesRemaining: state.lives });
+            if (state.lives <= 0) { gameOver = true; endGame('no_lives'); }
+          }
+          emit('incorrectKeystroke', { char, expected, prevCombo, livesRemaining: state.lives });
+          emit('comboChange', { combo: 0, multiplier: 1, broken: true });
+          return { accepted: true, correct: false, expected, gameOver, prevCombo };
+        }
+      }
+
+      return {
+        on(event, fn) { if (!listeners[event]) listeners[event] = []; listeners[event].push(fn); },
+        start: startGame,
+        end: endGame,
+        keystroke: processKeystroke,
+        getState: () => ({ ...state })
+      };
+    })();
+
+    // =========================================================================
+    // UI CONTROLLER
+    // =========================================================================
+    const UI = (() => {
+      const $ = id => document.getElementById(id);
+      const els = {};
+
+      function init() {
+        els.container = $('crt-container');
+        els.startScreen = $('start-screen');
+        els.gameOverScreen = $('game-over-screen');
+        els.gameOverTitle = $('game-over-title');
+        els.finalStats = $('final-stats');
+        els.wordDisplay = $('word-display');
+        els.wordQueue = $('word-queue');
+        els.score = $('score');
+        els.combo = $('combo');
+        els.multiplier = $('multiplier');
+        els.wpm = $('wpm');
+        els.lives = $('lives');
+        els.progress = $('progress');
+        els.particles = $('particles');
+        els.feverOverlay = $('fever-overlay');
+        els.feverText = $('fever-text');
+        els.bossContainer = $('boss-container');
+        els.bossName = $('boss-name');
+        els.bossAscii = $('boss-ascii');
+        els.bossHp = $('boss-hp');
+      }
+
+      function renderWord(word, typedIndex) {
+        els.wordDisplay.innerHTML = word.split('').map((char, i) => {
+          let cls = 'char ';
+          if (i < typedIndex) cls += 'typed';
+          else if (i === typedIndex) cls += 'current';
+          else cls += 'pending';
+          return `<span class="${cls}">${char}</span>`;
+        }).join('');
+      }
+
+      function renderQueue(queue) {
+        els.wordQueue.innerHTML = queue.slice(0, 3).map(w => `<span class="queue-word">${w}</span>`).join('');
+      }
+
+      function renderLives(current, max) {
+        els.lives.innerHTML = Array(max).fill().map((_, i) => `<span class="life ${i >= current ? 'lost' : ''}">♥</span>`).join('');
+      }
+
+      function showStartScreen() {
+        els.startScreen.classList.remove('hidden');
+        els.gameOverScreen.classList.add('hidden');
+      }
+
+      function hideStartScreen() {
+        els.startScreen.classList.add('hidden');
+      }
+
+      function showGameOver(stats, reason) {
+        els.gameOverScreen.classList.remove('hidden');
+        els.gameOverTitle.textContent = reason === 'victory' ? 'VICTORY!' : 'GAME OVER';
+        els.gameOverTitle.classList.toggle('victory', reason === 'victory');
+        els.finalStats.innerHTML = `
+          <div class="stat-item"><div class="stat-label">Score</div><div class="stat-value">${stats.score.toLocaleString()}</div></div>
+          <div class="stat-item"><div class="stat-label">Words</div><div class="stat-value">${stats.wordsCompleted}</div></div>
+          <div class="stat-item"><div class="stat-label">Max Combo</div><div class="stat-value">${stats.maxCombo}x</div></div>
+          <div class="stat-item"><div class="stat-label">Accuracy</div><div class="stat-value">${stats.accuracy}%</div></div>
+          <div class="stat-item"><div class="stat-label">Avg WPM</div><div class="stat-value">${stats.avgWpm}</div></div>
+          <div class="stat-item"><div class="stat-label">Peak WPM</div><div class="stat-value">${stats.peakWpm}</div></div>
+        `;
+      }
+
+      function hideGameOver() {
+        els.gameOverScreen.classList.add('hidden');
+      }
+
+      function showBoss(boss) {
+        els.bossContainer.classList.remove('hidden');
+        els.bossName.textContent = boss.name;
+        els.bossAscii.textContent = boss.ascii;
+        els.bossHp.style.width = '100%';
+      }
+
+      function hideBoss() {
+        els.bossContainer.classList.add('hidden');
+      }
+
+      function updateBossHp(current, max) {
+        els.bossHp.style.width = `${(current / max) * 100}%`;
+      }
+
+      function shake(intensity = 'normal') {
+        els.container.classList.remove('shake', 'shake-heavy', 'shake-violent');
+        void els.container.offsetWidth;
+        const cls = intensity === 'heavy' ? 'shake-heavy' : intensity === 'violent' ? 'shake-violent' : 'shake';
+        els.container.classList.add(cls);
+        setTimeout(() => els.container.classList.remove(cls), 200);
+      }
+
+      function rgbSplit() {
+        els.wordDisplay.classList.add('rgb-split');
+        setTimeout(() => els.wordDisplay.classList.remove('rgb-split'), 150);
+      }
+
+      function flicker() {
+        els.container.classList.add('flicker');
+        setTimeout(() => els.container.classList.remove('flicker'), 100);
+      }
+
+      function showFever() {
+        els.feverOverlay.classList.add('active');
+        els.feverText.classList.remove('hidden');
+        setTimeout(() => els.feverText.classList.add('hidden'), 2000);
+      }
+
+      function hideFever() {
+        els.feverOverlay.classList.remove('active');
+      }
+
+      function createSparks(x, y, count = 5, color = 'var(--crt-amber)') {
+        for (let i = 0; i < count; i++) {
+          const spark = document.createElement('div');
+          spark.className = 'spark';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 30 + Math.random() * 60;
+          spark.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(angle)*dist};--dy:${Math.sin(angle)*dist};background:${color}`;
+          els.particles.appendChild(spark);
+          setTimeout(() => spark.remove(), 600);
+        }
+      }
+
+      function showComboPopup(combo, x, y) {
+        const popup = document.createElement('div');
+        popup.className = 'combo-popup';
+        popup.textContent = `${combo} COMBO!`;
+        popup.style.cssText = `left:${x}px;top:${y}px;color:${combo >= 50 ? 'var(--crt-cyan)' : combo >= 25 ? 'var(--crt-amber)' : 'var(--crt-green)'}`;
+        els.particles.appendChild(popup);
+        setTimeout(() => popup.remove(), 800);
+      }
+
+      function explodeWord(word) {
+        const rect = els.wordDisplay.getBoundingClientRect();
+        const containerRect = els.container.getBoundingClientRect();
+        const centerX = rect.left - containerRect.left + rect.width / 2;
+        const centerY = rect.top - containerRect.top + rect.height / 2;
+
+        word.split('').forEach((char, i) => {
+          const particle = document.createElement('span');
+          particle.className = 'particle';
+          particle.textContent = char;
+          const angle = (Math.PI * 2 * i) / word.length;
+          const dist = 100 + Math.random() * 100;
+          particle.style.cssText = `left:${centerX}px;top:${centerY}px;--dx:${Math.cos(angle)*dist};--dy:${Math.sin(angle)*dist};--rot:${(Math.random()-0.5)*720}deg;color:var(--crt-cyan)`;
+          els.particles.appendChild(particle);
+          setTimeout(() => particle.remove(), 1000);
+        });
+
+        createSparks(centerX, centerY, 15, 'var(--crt-green)');
+      }
+
+      return {
+        init, renderWord, renderQueue, renderLives, showStartScreen, hideStartScreen,
+        showGameOver, hideGameOver, showBoss, hideBoss, updateBossHp,
+        shake, rgbSplit, flicker, showFever, hideFever, createSparks, showComboPopup, explodeWord,
+        updateScore: v => els.score.textContent = v.toLocaleString(),
+        updateCombo: (v, onFire) => { els.combo.textContent = v; els.combo.classList.toggle('on-fire', onFire); },
+        updateMultiplier: v => els.multiplier.textContent = `${v}x`,
+        updateWpm: v => els.wpm.textContent = v,
+        updateProgress: p => els.progress.style.width = `${p}%`,
+        setComboGlow: v => els.container.style.setProperty('--combo-glow', v)
+      };
+    })();
+
+    // =========================================================================
+    // MAIN GAME CONTROLLER
+    // =========================================================================
+    (async function main() {
+      // Initialize systems
+      const canvas = document.getElementById('grid-canvas');
+      Grid.init(canvas);
+      UI.init();
+      UI.showStartScreen();
+
+      // Mode selection
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await Audio.init();
+          UI.hideStartScreen();
+          UI.hideGameOver();
+          Game.start(btn.dataset.mode);
+        });
+      });
+
+      // Retry button
+      document.getElementById('retry-btn').addEventListener('click', () => {
+        UI.showStartScreen();
+        UI.hideGameOver();
+      });
+
+      // Keyboard input
+      document.addEventListener('keydown', e => {
+        if (!Game.getState().isRunning) return;
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          const result = Game.keystroke(e.key);
+          if (result.accepted) {
+            Audio.playKeystroke(result.correct);
+            if (result.correct) {
+              Grid.pulse('keystroke');
+              const state = Game.getState();
+              UI.renderWord(state.currentWord, state.currentWordIndex);
+              if (result.wordDone) {
+                Grid.pulse('wordComplete');
+                Audio.playWordComplete(state.combo);
+                UI.explodeWord(state.currentWord);
+              }
+            } else {
+              Grid.pulse('error');
+              UI.shake('heavy');
+              UI.rgbSplit();
+              UI.flicker();
+              const state = Game.getState();
+              UI.renderWord(state.currentWord, state.currentWordIndex);
+              // Mark error char
+              const chars = document.querySelectorAll('#word-display .char');
+              if (chars[state.currentWordIndex]) chars[state.currentWordIndex].classList.add('error');
+            }
+          }
+        }
+      });
+
+      // Game events
+      Game.on('gameStart', ({ mode, config }) => {
+        const state = Game.getState();
+        if (config.hasLives) UI.renderLives(state.lives, state.maxLives);
+        UI.hideBoss();
+        UI.updateScore(0);
+        UI.updateCombo(0, false);
+        UI.updateMultiplier(1);
+        UI.updateWpm(0);
+        UI.updateProgress(0);
+        UI.setComboGlow(0);
+      });
+
+      Game.on('newWord', ({ word, queue }) => {
+        UI.renderWord(word, 0);
+        UI.renderQueue(queue);
+      });
+
+      Game.on('scoreChange', ({ score }) => UI.updateScore(score));
+
+      Game.on('comboChange', ({ combo, multiplier, broken }) => {
+        UI.updateCombo(combo, combo >= 20);
+        UI.updateMultiplier(multiplier);
+        UI.setComboGlow(Math.min(1, combo / 50));
+        Grid.update(Game.getState().wpm, combo);
+        Audio.setIntensity(Game.getState().wpm, combo);
+
+        if (combo > 0 && combo % 10 === 0) {
+          const rect = document.getElementById('combo').getBoundingClientRect();
+          const containerRect = document.getElementById('crt-container').getBoundingClientRect();
+          UI.showComboPopup(combo, rect.left - containerRect.left + rect.width/2, rect.top - containerRect.top);
+          UI.shake();
+        }
+
+        if (broken && !Game.getState().isFeverMode) {
+          Audio.deactivateFeverMode();
+          UI.hideFever();
+        }
+      });
+
+      Game.on('wpmUpdate', ({ wpm }) => {
+        UI.updateWpm(wpm);
+        Grid.update(wpm, Game.getState().combo);
+        Audio.setIntensity(wpm, Game.getState().combo);
+      });
+
+      Game.on('lifeLost', ({ livesRemaining }) => {
+        const state = Game.getState();
+        UI.renderLives(livesRemaining, state.maxLives);
+        UI.shake('violent');
+      });
+
+      Game.on('feverModeStart', () => {
+        Audio.triggerFeverMode();
+        UI.showFever();
+        Grid.pulse('levelUp');
+      });
+
+      Game.on('feverModeEnd', () => {
+        Audio.deactivateFeverMode();
+        UI.hideFever();
+      });
+
+      Game.on('levelUp', ({ level }) => {
+        Grid.pulse('levelUp');
+        Audio.playLevelComplete();
+        UI.shake();
+        UI.updateProgress((level % 10) * 10);
+      });
+
+      Game.on('wordComplete', ({ word, wordsCompleted }) => {
+        UI.updateProgress((wordsCompleted % 10) * 10);
+      });
+
+      Game.on('bossAppear', ({ boss }) => {
+        UI.showBoss(boss);
+        UI.shake('violent');
+      });
+
+      Game.on('bossDamage', ({ remainingHp, maxHp }) => {
+        UI.updateBossHp(remainingHp, maxHp);
+        UI.shake();
+      });
+
+      Game.on('bossDefeated', ({ boss, bonus }) => {
+        Audio.playLevelComplete();
+        Grid.pulse('levelUp');
+        UI.shake('violent');
+        setTimeout(() => UI.hideBoss(), 1500);
+      });
+
+      Game.on('bossAttack', () => {
+        UI.shake('violent');
+        UI.rgbSplit();
+        Audio.playKeystroke(false);
+      });
+
+      Game.on('timerTick', ({ remaining }) => {
+        UI.updateProgress((remaining / 60000) * 100);
+      });
+
+      Game.on('gameOver', ({ reason, stats }) => {
+        if (reason === 'victory') Audio.playLevelComplete();
+        else Audio.playLevelFail();
+        UI.showGameOver(stats, reason);
+        UI.hideFever();
+        UI.hideBoss();
+      });
+
+    })();
+  </script>
+</body>
+</html>

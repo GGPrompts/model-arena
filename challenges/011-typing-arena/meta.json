@@ -1,0 +1,11 @@
+{
+  "id": "011-typing-arena",
+  "title": "Retro Typing Arena",
+  "date": "2026-01-28",
+  "prompt": "Create an INSANE retro typing challenge game with: synthwave wavy grid background that reacts to typing speed/combo, theatrical Web Audio bleep bloops for every keystroke, combo fanfares, fever mode explosions, 4 game modes (SURVIVAL, TIME_ATTACK, PERFECT_RUN, BOSS_BATTLE with ASCII art bosses), CRT visual effects including screen shake/RGB split/scanlines/phosphor glow, particle explosions on word completion. Make it feel like typing inside a CRT that's about to explode. Single HTML file.",
+  "contestants": ["claude-opus-4.5-orchestrated"],
+  "note": "Built by orchestrating 4 parallel opus subagents: grid system, audio system, game engine, visual effects. Then combined into single HTML.",
+  "answers": {
+    "a": "claude-opus-4.5-orchestrated"
+  }
+}
