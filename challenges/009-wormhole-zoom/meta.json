@@ -4,6 +4,7 @@
   "date": "2026-01-27",
   "prompt": "Create a page that feels like getting sucked into wormholes - an infinite zoom effect where the camera progressively zooms into one point that reveals another full picture, like a Droste effect or fractal zoom. Pick any theme you like. Make it hypnotic and mesmerizing.",
   "contestants": ["claude", "codex", "gemini"],
+  "note": "Gemini via Copilot (free tier Gemini CLI hit limits)",
   "answers": {
     "a": "claude",
     "b": "gemini",
