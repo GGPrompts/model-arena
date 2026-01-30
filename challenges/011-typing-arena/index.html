@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RETRO TYPING ARENA</title>
+  <title>TERMINAL TYPING ARENA</title>
   <style>
     /* =========================================================================
        RETRO TYPING ARENA - THE INSANE STYLESHEET
@@ -122,12 +122,12 @@
       100% { transform: translateY(4px); }
     }
 
-    /* Particle container */
+    /* Particle container - below typing area */
     .particle-container {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      z-index: 200;
+      z-index: 30;
       overflow: hidden;
     }
 
@@ -247,6 +247,8 @@
       justify-content: center;
       align-items: center;
       gap: 40px;
+      position: relative;
+      z-index: 60;
     }
 
     /* Current word display */
@@ -259,6 +261,12 @@
       justify-content: center;
       flex-wrap: wrap;
       gap: 4px;
+      /* Dark backing to maintain readability at high combo */
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 30px;
+      border-radius: 8px;
+      position: relative;
+      z-index: 70;
     }
 
     .char {
@@ -280,7 +288,15 @@
     }
 
     .char.pending {
-      color: rgba(0, 255, 65, 0.4);
+      color: rgba(200, 220, 200, 0.75);
+      text-shadow: none;
+    }
+
+    .char.space {
+      margin: 0 4px;
+      opacity: 0.5;
+      font-size: 0.7em;
+      vertical-align: middle;
     }
 
     .char.error {
@@ -309,17 +325,20 @@
     /* Word queue preview */
     .word-queue {
       font-size: 1.2em;
-      color: rgba(0, 255, 65, 0.3);
+      color: rgba(150, 180, 150, 0.8);
       display: flex;
       gap: 30px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 20px;
+      border-radius: 4px;
     }
 
     .queue-word {
-      opacity: 0.5;
+      opacity: 0.6;
       transition: opacity 0.3s;
     }
 
-    .queue-word:first-child { opacity: 0.7; }
+    .queue-word:first-child { opacity: 0.85; }
 
     /* Progress bar */
     .progress-container {
@@ -442,6 +461,50 @@
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
+    }
+
+    /* =========================================================================
+       COUNTDOWN SCREEN
+       ========================================================================= */
+    #countdown-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 150;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    #countdown-screen.hidden { display: none; }
+
+    .countdown-number {
+      font-size: 12em;
+      font-weight: bold;
+      color: var(--crt-cyan);
+      text-shadow: 0 0 40px var(--crt-cyan), 0 0 80px var(--crt-cyan);
+      animation: countdown-pulse 0.5s ease-out;
+    }
+
+    .countdown-number.go {
+      font-size: 8em;
+      color: var(--crt-green);
+      text-shadow: 0 0 40px var(--crt-green), 0 0 80px var(--crt-green);
+    }
+
+    @keyframes countdown-pulse {
+      0% { transform: scale(2); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .countdown-hint {
+      font-size: 1.2em;
+      color: rgba(0, 255, 65, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 3px;
     }
 
     /* =========================================================================
@@ -570,28 +633,28 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
-      z-index: 90;
-      background: radial-gradient(circle at center, transparent 30%, rgba(255, 0, 100, 0.1) 60%, rgba(255, 0, 100, 0.3) 100%);
+      z-index: 40;
+      background: radial-gradient(circle at center, transparent 50%, rgba(255, 0, 100, 0.05) 70%, rgba(255, 0, 100, 0.15) 100%);
       opacity: 0;
       transition: opacity 0.3s;
     }
 
     .fever-overlay.active {
       opacity: 1;
-      animation: fever-pulse 0.3s ease-in-out infinite alternate;
+      animation: fever-pulse 0.5s ease-in-out infinite alternate;
     }
 
     @keyframes fever-pulse {
-      0% { opacity: 0.5; }
-      100% { opacity: 1; }
+      0% { opacity: 0.4; }
+      100% { opacity: 0.7; }
     }
 
     .fever-text {
       position: absolute;
-      top: 50%;
+      top: 18%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 5em;
+      transform: translateX(-50%);
+      font-size: 4em;
       font-weight: bold;
       color: var(--crt-magenta);
       text-shadow: 0 0 30px var(--crt-magenta), 0 0 60px var(--crt-red);
@@ -603,9 +666,9 @@
     .fever-text.hidden { display: none; }
 
     @keyframes fever-text-in {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(3) rotate(-10deg); }
-      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
-      100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      0% { opacity: 0; transform: translateX(-50%) scale(3) rotate(-10deg); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.2) rotate(5deg); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1) rotate(0deg); }
     }
 
     /* =========================================================================
@@ -617,7 +680,7 @@
       font-weight: bold;
       animation: combo-popup 0.8s ease-out forwards;
       pointer-events: none;
-      z-index: 300;
+      z-index: 55;
     }
 
     @keyframes combo-popup {
@@ -716,27 +779,33 @@
 
       <!-- Start screen -->
       <div id="start-screen">
-        <div class="title">RETRO TYPING ARENA</div>
-        <div class="subtitle">Test your typing skills in the neon void</div>
+        <div class="title">TERMINAL TYPING ARENA</div>
+        <div class="subtitle">Master bash commands & Claude Code CLI in the neon void</div>
         <div class="mode-select">
           <button class="mode-btn" data-mode="SURVIVAL">
             <div class="mode-name">SURVIVAL</div>
-            <div class="mode-desc">Endless mode - words get harder, speed increases. 3 lives.</div>
+            <div class="mode-desc">Endless mode - commands get longer, speed increases. 3 lives.</div>
           </button>
           <button class="mode-btn" data-mode="TIME_ATTACK">
             <div class="mode-name">TIME ATTACK</div>
-            <div class="mode-desc">60 seconds to maximize your score!</div>
+            <div class="mode-desc">60 seconds to type as many commands as possible!</div>
           </button>
           <button class="mode-btn" data-mode="PERFECT_RUN">
             <div class="mode-name">PERFECT RUN</div>
-            <div class="mode-desc">One mistake = Game Over. How far can you go?</div>
+            <div class="mode-desc">One typo = segfault. How far can you go?</div>
           </button>
           <button class="mode-btn" data-mode="BOSS_BATTLE">
             <div class="mode-name">BOSS BATTLE</div>
-            <div class="mode-desc">Defeat ASCII art bosses by typing their attacks!</div>
+            <div class="mode-desc">Defeat terminal terrors by typing their error messages!</div>
           </button>
         </div>
         <div class="start-hint">Click a mode to begin</div>
+      </div>
+
+      <!-- Countdown screen -->
+      <div id="countdown-screen" class="hidden">
+        <div class="countdown-hint">GET READY</div>
+        <div class="countdown-number" id="countdown-number">3</div>
       </div>
 
       <!-- Game over screen -->
@@ -1217,6 +1286,64 @@
           });
         },
 
+        playCountdownBeep(step) {
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          if (step === 'go') {
+            // Triumphant boot-up sound for GO!
+            const freqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+            freqs.forEach((freq, i) => {
+              const o = ctx.createOscillator();
+              o.type = 'square';
+              o.frequency.value = freq;
+              const g = ctx.createGain();
+              const delay = i * 0.05;
+              g.gain.setValueAtTime(0, now + delay);
+              g.gain.linearRampToValueAtTime(0.2, now + delay + 0.02);
+              g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
+              o.connect(g); g.connect(compressor);
+              o.start(now + delay); o.stop(now + delay + 0.5);
+            });
+            // Add a noise burst for that terminal "access granted" feel
+            const noise = ctx.createBufferSource();
+            noise.buffer = createNoiseBuffer(0.15);
+            const noiseFilter = ctx.createBiquadFilter();
+            noiseFilter.type = 'highpass'; noiseFilter.frequency.value = 2000;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.15, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(compressor);
+            noise.start(now);
+          } else {
+            // Classic terminal beep for 3, 2, 1
+            const baseFreq = 880; // A5 - classic terminal beep frequency
+            const o = ctx.createOscillator();
+            o.type = 'square';
+            o.frequency.setValueAtTime(baseFreq, now);
+            o.frequency.exponentialRampToValueAtTime(baseFreq * 0.8, now + 0.15);
+
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.25, now + 0.01);
+            g.gain.setValueAtTime(0.25, now + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+            o.connect(g); g.connect(compressor);
+            o.start(now); o.stop(now + 0.25);
+
+            // Add subtle click
+            const click = ctx.createOscillator();
+            click.type = 'sine';
+            click.frequency.value = 1200;
+            const clickGain = ctx.createGain();
+            clickGain.gain.setValueAtTime(0.1, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            click.connect(clickGain); clickGain.connect(compressor);
+            click.start(now); click.stop(now + 0.05);
+          }
+        },
+
         triggerFeverMode() {
           if (!ctx || isFeverMode) return;
           isFeverMode = true;
@@ -1266,26 +1393,31 @@
     // GAME ENGINE
     // =========================================================================
     const WORD_BANKS = {
-      easy: ['cat','dog','run','jump','code','type','fast','slow','game','play','win','lose','key','word','text','fire','ice','hot','cold','big','small','red','blue','green','black','white','up','down','left','right','go','stop','yes','no','hit','miss','good','bad','new','old'],
-      medium: ['function','variable','constant','keyboard','monitor','computer','program','algorithm','developer','challenge','precision','accuracy','velocity','momentum','intensity','frequency','amplitude','spectrum','terminal','interface','protocol','sequence','parallel','recursive','iteration','compiler','debugger','framework','library','module','package','deploy'],
-      hard: ['asynchronous','polymorphism','encapsulation','authentication','authorization','infrastructure','microservices','containerization','virtualization','orchestration','optimization','implementation','configuration','serialization','deserialization','concatenation','interpolation','extrapolation','acceleration','deceleration','synchronization','initialization','instantiation','multiplication'],
-      insane: ['antidisestablishmentarianism','pseudopseudohypoparathyroidism','floccinaucinihilipilification','incomprehensibilities','electroencephalographically','immunoelectrophoretically'],
-      programming: ['const','let','var','function','return','async','await','promise','class','extends','implements','interface','export','import','default','static','public','private','protected','readonly','abstract','override','typeof','instanceof','null','undefined','boolean','number','string','object','array','map','set','symbol','console.log','document.getElementById','addEventListener','querySelector','setTimeout','setInterval','JSON.parse','JSON.stringify','Object.keys','Array.from','Math.random','Math.floor']
+      // Short bash commands
+      easy: ['ls','cd','pwd','cat','grep','echo','mkdir','rm','cp','mv','touch','chmod','chown','man','head','tail','less','more','find','wc','ps','kill','top','df','du','tar','zip','ssh','scp','curl','wget','ping','git','npm','node','vim','nano','exit','clear','history','alias','export','source','which','whoami','date','cal','uname'],
+      // Longer commands and common flags
+      medium: ['ls -la','cd ..','git status','git commit','git push','git pull','git branch','git checkout','git merge','git stash','npm install','npm run dev','chmod +x','grep -r','find . -name','tail -f','ps aux','kill -9','ssh-keygen','curl -X POST','docker ps','docker build','docker run','kubectl get','cat ~/.bashrc','echo $PATH','export PATH','source ~/.zshrc','rm -rf','cp -r','mv -f','tar -xvf','zip -r'],
+      // Complex commands and Claude Code flags
+      hard: ['claude --print','claude --resume','claude --continue','claude --dangerously-skip-permissions','claude --allowedTools','claude --disallowedTools','claude --model sonnet','claude --model opus','claude --verbose','claude mcp list','claude mcp add','git rebase -i HEAD~3','docker-compose up -d','kubectl apply -f','npm run build && npm start','git log --oneline --graph','find . -type f -name "*.js"','grep -rn "pattern" --include="*.ts"','chmod -R 755','rsync -avz --progress','ssh -i ~/.ssh/id_rsa','curl -H "Authorization: Bearer"','awk \'{print $1}\'','sed -i "s/old/new/g"','xargs -I {} echo {}','sudo !!','cat /dev/urandom',':(){ :|:& };:','yes | rm -rf'],
+      // Long command chains
+      insane: ['git add . && git commit -m "feat: update" && git push origin main','docker build -t myapp . && docker run -p 3000:3000 myapp','find . -name "*.log" -mtime +7 -exec rm {} \\;','kubectl get pods -n production -o wide --sort-by=.status.startTime','curl -s https://api.example.com | jq ".data[] | select(.active)"','tar -czvf backup-$(date +%Y%m%d).tar.gz /path/to/files','ssh user@host "cd /app && git pull && pm2 restart all"','grep -rn "TODO" --include="*.{ts,js}" | wc -l'],
+      // Claude Code slash commands and CLI specifics
+      programming: ['/help','/clear','/compact','/config','/cost','/doctor','/init','/login','/logout','/memory','/model','/permissions','/pr-comments','/review','/status','/terminal-setup','/vim','/bug','/mcp','--help','-p','--print','-c','--continue','-r','--resume','--model','--allowedTools','--disallowedTools','--mcp-config','--permission-prompt-tool','--dangerously-skip-permissions','--yes-to-all','CLAUDE.md','claude.json','.claudeignore','mcp-config.json','claude config set','claude mcp add','claude mcp remove','bypassPermissions true','allowedTools Edit Bash','disallowedTools Write']
     };
 
     const BOSSES = {
-      1: { name: 'SYNTAX ERROR', ascii: '    (╯°□°)╯︵ ┻━┻\n     SYNTAX ERROR', maxHp: 100, phrases: ['unexpected token','missing semicolon','null pointer','stack overflow','type error'], attackInterval: 6000 },
-      2: { name: 'MEMORY LEAK', ascii: '  ░░░▓▓▓███████▓▓▓░░\n      MEMORY LEAK', maxHp: 200, phrases: ['heap allocation failed','out of memory','garbage collection','buffer overflow','segmentation fault'], attackInterval: 5500 },
-      3: { name: 'INFINITE LOOP', ascii: '  while(true) {\n    INFINITE LOOP\n  }', maxHp: 350, phrases: ['while true forever','recursion overflow','call stack exceeded','process not responding','ctrl alt delete'], attackInterval: 5000 },
-      4: { name: 'RACE CONDITION', ascii: '  T1=>T2<=T3=>T4\n   RACE CONDITION', maxHp: 500, phrases: ['deadlock detected','mutex timeout','concurrent modification','thread sync failed','critical section'], attackInterval: 4500 },
-      5: { name: 'LEGACY CODE', ascii: '  // TODO: refactor someday\n  // WARNING: HERE BE DRAGONS\n    L E G A C Y   C O D E', maxHp: 1000, phrases: ['magic number found','deprecated function','spaghetti code','technical debt','goto considered harmful'], attackInterval: 4000 }
+      1: { name: 'PERMISSION DENIED', ascii: '    ⛔ ACCESS DENIED ⛔\n      chmod 000 *', maxHp: 100, phrases: ['sudo','chmod','root','denied','forbidden'], attackInterval: 8000 },
+      2: { name: 'SEGFAULT', ascii: '  Segmentation fault\n     (core dumped)', maxHp: 200, phrases: ['core dumped','null pointer','segfault','bad address','stack smash'], attackInterval: 7500 },
+      3: { name: 'FORK BOMB', ascii: '  :(){ :|:& };:\n    FORK BOMB', maxHp: 350, phrases: ['cannot fork','out of memory','kill -9','process limit','oom killer'], attackInterval: 7000 },
+      4: { name: 'MERGE CONFLICT', ascii: '  <<<<<<< HEAD\n  ======= \n  >>>>>>> main', maxHp: 500, phrases: ['git stash','rebase abort','checkout ours','reset HEAD','force push'], attackInterval: 6500 },
+      5: { name: 'rm -rf /', ascii: '  $ sudo rm -rf /\n  ☠️  TOTAL DESTRUCTION  ☠️', maxHp: 1000, phrases: ['kernel panic','system halted','no such file','disk full','fsck required'], attackInterval: 6000 }
     };
 
     const GAME_MODES = {
       SURVIVAL: { name: 'SURVIVAL', hasTimer: false, hasLives: true, initialLives: 3, speedIncrease: true, difficultyProgression: true },
       TIME_ATTACK: { name: 'TIME ATTACK', hasTimer: true, duration: 60000, hasLives: false, speedIncrease: false, difficultyProgression: false },
       PERFECT_RUN: { name: 'PERFECT RUN', hasTimer: false, hasLives: true, initialLives: 1, speedIncrease: true, difficultyProgression: true },
-      BOSS_BATTLE: { name: 'BOSS BATTLE', hasTimer: false, hasLives: true, initialLives: 5, speedIncrease: false, difficultyProgression: false, isBossBattle: true }
+      BOSS_BATTLE: { name: 'BOSS BATTLE', hasTimer: false, hasLives: true, initialLives: 7, speedIncrease: false, difficultyProgression: false, isBossBattle: true }
     };
 
     const Game = (() => {
@@ -1371,12 +1503,12 @@
         state.currentWord = boss.phrases[Math.floor(Math.random() * boss.phrases.length)];
         state.currentWordIndex = 0;
         state.wordQueue = [];
-        // Grace period before first attack (1.5x normal interval)
+        // Grace period before first attack (3x normal interval for breathing room)
         setTimeout(() => {
           if (state.currentBoss && state.isRunning) {
             timers.bossAttack = setInterval(() => bossAttack(), boss.attackInterval);
           }
-        }, boss.attackInterval * 1.5);
+        }, boss.attackInterval * 3);
         emit('bossAppear', { boss: { name: boss.name, ascii: boss.ascii, hp: boss.maxHp, level } });
         emit('newWord', { word: state.currentWord, queue: [], isBoss: true });
       }
@@ -1533,6 +1665,8 @@
         els.gameOverScreen = $('game-over-screen');
         els.gameOverTitle = $('game-over-title');
         els.finalStats = $('final-stats');
+        els.countdownScreen = $('countdown-screen');
+        els.countdownNumber = $('countdown-number');
         els.wordDisplay = $('word-display');
         els.wordQueue = $('word-queue');
         els.score = $('score');
@@ -1556,7 +1690,10 @@
           if (i < typedIndex) cls += 'typed';
           else if (i === typedIndex) cls += 'current';
           else cls += 'pending';
-          return `<span class="${cls}">${char}</span>`;
+          // Make spaces visible and distinct
+          if (char === ' ') cls += ' space';
+          const displayChar = char === ' ' ? '␣' : char;
+          return `<span class="${cls}">${displayChar}</span>`;
         }).join('');
       }
 
@@ -1679,9 +1816,40 @@
         createSparks(centerX, centerY, 15, 'var(--crt-green)');
       }
 
+      function runCountdown(callback, audioModule) {
+        els.countdownScreen.classList.remove('hidden');
+        const steps = ['3', '2', '1', 'GO!'];
+        let i = 0;
+
+        function showNext() {
+          if (i < steps.length) {
+            els.countdownNumber.textContent = steps[i];
+            els.countdownNumber.classList.toggle('go', steps[i] === 'GO!');
+            // Play terminal beep
+            if (audioModule) {
+              audioModule.playCountdownBeep(steps[i] === 'GO!' ? 'go' : 'beep');
+            }
+            // Re-trigger animation
+            els.countdownNumber.style.animation = 'none';
+            els.countdownNumber.offsetHeight; // Force reflow
+            els.countdownNumber.style.animation = '';
+            i++;
+            setTimeout(showNext, i === steps.length ? 500 : 800);
+          } else {
+            els.countdownScreen.classList.add('hidden');
+            callback();
+          }
+        }
+        showNext();
+      }
+
+      function hideCountdown() {
+        els.countdownScreen.classList.add('hidden');
+      }
+
       return {
         init, renderWord, renderQueue, renderLives, showStartScreen, hideStartScreen,
-        showGameOver, hideGameOver, showBoss, hideBoss, updateBossHp,
+        showGameOver, hideGameOver, showBoss, hideBoss, updateBossHp, runCountdown, hideCountdown,
         shake, rgbSplit, flicker, showFever, hideFever, createSparks, showComboPopup, explodeWord,
         updateScore: v => els.score.textContent = v.toLocaleString(),
         updateCombo: (v, onFire) => { els.combo.textContent = v; els.combo.classList.toggle('on-fire', onFire); },
@@ -1708,7 +1876,10 @@
           await Audio.init();
           UI.hideStartScreen();
           UI.hideGameOver();
-          Game.start(btn.dataset.mode);
+          const mode = btn.dataset.mode;
+          UI.runCountdown(() => {
+            Game.start(mode);
+          }, Audio);
         });
       });
 
