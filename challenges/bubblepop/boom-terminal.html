@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BOOM TERMINAL</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  color: #00ff41;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#crt {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 900px;
+  max-height: 100vh;
+  background: #0a0a0a;
+  overflow: hidden;
+  border: 2px solid #1a3a1a;
+  box-shadow: 0 0 40px rgba(0,255,65,0.15), inset 0 0 60px rgba(0,0,0,0.5);
+}
+
+/* Scanlines overlay */
+#crt::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.12) 2px,
+    rgba(0,0,0,0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* CRT vignette */
+#crt::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* ========== TITLE SCREEN ========== */
+#title-screen { text-align: center; }
+#title-screen .ascii-title {
+  font-size: clamp(8px, 2.2vw, 16px);
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+  white-space: pre;
+  line-height: 1.2;
+  margin-bottom: 30px;
+}
+#title-screen .blink {
+  animation: blink 1s ease-in-out infinite;
+  font-size: clamp(12px, 2vw, 18px);
+  color: #ffb000;
+  text-shadow: 0 0 10px #ffb000;
+  margin-top: 20px;
+}
+#title-screen .subtitle {
+  font-size: clamp(10px, 1.5vw, 14px);
+  color: #666;
+  text-shadow: 0 0 5px #333;
+  margin-top: 10px;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ========== SONG SELECT SCREEN ========== */
+#song-select { padding: 20px; }
+#song-select h2 {
+  font-size: clamp(16px, 3vw, 24px);
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+  margin-bottom: 30px;
+  text-align: center;
+}
+.song-list { width: 100%; max-width: 500px; }
+.song-item {
+  padding: 15px 20px;
+  margin: 8px 0;
+  border: 1px solid #1a3a1a;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.song-item.selected {
+  border-color: #00ff41;
+  background: rgba(0,255,65,0.08);
+  box-shadow: 0 0 15px rgba(0,255,65,0.2), inset 0 0 15px rgba(0,255,65,0.05);
+}
+.song-item .song-title {
+  font-size: clamp(14px, 2vw, 18px);
+  color: #00ffff;
+  text-shadow: 0 0 8px #00ffff;
+}
+.song-item .song-meta {
+  font-size: clamp(10px, 1.4vw, 13px);
+  color: #888;
+  margin-top: 4px;
+}
+.song-item .song-diff { margin-top: 4px; }
+.song-item .song-diff.easy { color: #00ff41; text-shadow: 0 0 6px #00ff41; }
+.song-item .song-diff.medium { color: #ffb000; text-shadow: 0 0 6px #ffb000; }
+.song-item .song-diff.hard { color: #ff00ff; text-shadow: 0 0 6px #ff00ff; }
+
+#song-select .nav-hint {
+  margin-top: 30px;
+  font-size: clamp(10px, 1.3vw, 13px);
+  color: #555;
+  text-align: center;
+}
+
+/* ========== COUNTDOWN SCREEN ========== */
+#countdown-screen {
+  justify-content: center;
+  align-items: center;
+}
+#countdown-text {
+  font-size: clamp(60px, 15vw, 120px);
+  color: #00ff41;
+  text-shadow: 0 0 30px #00ff41, 0 0 60px #00ff41;
+  animation: pulse-countdown 0.5s ease-in-out infinite;
+}
+@keyframes pulse-countdown {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ========== GAMEPLAY SCREEN ========== */
+#game-screen {
+  display: none;
+  flex-direction: column;
+}
+#game-screen.active { display: flex; }
+
+#game-hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  background: rgba(0,0,0,0.8);
+  border-bottom: 1px solid #1a3a1a;
+  z-index: 100;
+  font-size: clamp(10px, 1.4vw, 14px);
+}
+#hud-left { color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+#hud-center { color: #ffb000; text-shadow: 0 0 8px #ffb000; }
+#hud-right { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+
+#game-area {
+  position: absolute;
+  top: 40px; bottom: 0; left: 0; right: 0;
+}
+
+.lane {
+  position: absolute;
+  top: 0; bottom: 0;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.lane:nth-child(1) { left: 0; width: 25%; }
+.lane:nth-child(2) { left: 25%; width: 25%; }
+.lane:nth-child(3) { left: 50%; width: 25%; }
+.lane:nth-child(4) { left: 75%; width: 25%; }
+
+/* Hit zone */
+.hit-zone {
+  position: absolute;
+  top: 15%;
+  left: 0; right: 0;
+  height: 4px;
+  z-index: 50;
+}
+.hit-zone-line {
+  position: absolute;
+  top: 0; height: 100%;
+  border-top: 2px dashed;
+  opacity: 0.6;
+}
+.hit-zone-line.l0 { left: 0; width: 25%; border-color: #00ff41; }
+.hit-zone-line.l1 { left: 25%; width: 25%; border-color: #00ffff; }
+.hit-zone-line.l2 { left: 50%; width: 25%; border-color: #ffb000; }
+.hit-zone-line.l3 { left: 75%; width: 25%; border-color: #ff00ff; }
+
+/* Key indicators */
+#key-indicators {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  z-index: 50;
+}
+.key-ind {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-top: 2px solid;
+  transition: all 0.08s;
+  opacity: 0.5;
+  gap: 1px;
+  padding: 2px 0;
+}
+.ki-letter { font-size: clamp(14px, 2.5vw, 22px); }
+.ki-arrow { font-size: clamp(16px, 3vw, 26px); line-height: 1; }
+.key-ind.l0 { color: #00ff41; border-color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+.key-ind.l1 { color: #00ffff; border-color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+.key-ind.l2 { color: #ffb000; border-color: #ffb000; text-shadow: 0 0 8px #ffb000; }
+.key-ind.l3 { color: #ff00ff; border-color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+.key-ind.active {
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
+}
+
+/* Notes */
+.note {
+  position: absolute;
+  width: 25%;
+  text-align: center;
+  font-size: clamp(10px, 1.6vw, 16px);
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 30;
+  will-change: bottom;
+  line-height: 1;
+}
+.note .rocket-char {
+  position: relative;
+  z-index: 2;
+}
+.note .exhaust {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 30px;
+  border-radius: 0 0 2px 2px;
+  opacity: 0.7;
+}
+.note.l0 { left: 0; color: #00ff41; text-shadow: 0 0 10px #00ff41; }
+.note.l0 .exhaust { background: linear-gradient(to bottom, #00ff41, transparent); }
+.note.l1 { left: 25%; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+.note.l1 .exhaust { background: linear-gradient(to bottom, #00ffff, transparent); }
+.note.l2 { left: 50%; color: #ffb000; text-shadow: 0 0 10px #ffb000; }
+.note.l2 .exhaust { background: linear-gradient(to bottom, #ffb000, transparent); }
+.note.l3 { left: 75%; color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
+.note.l3 .exhaust { background: linear-gradient(to bottom, #ff00ff, transparent); }
+
+/* Judgment text */
+#judgment {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(20px, 4vw, 36px);
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Particles container */
+#particles {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 150;
+  overflow: hidden;
+}
+
+/* Lane flash */
+.lane-flash {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 25%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+  will-change: opacity;
+}
+.lane-flash.l0 { left: 0; background: radial-gradient(ellipse at 50% 15%, rgba(0,255,65,0.3), transparent 70%); }
+.lane-flash.l1 { left: 25%; background: radial-gradient(ellipse at 50% 15%, rgba(0,255,255,0.3), transparent 70%); }
+.lane-flash.l2 { left: 50%; background: radial-gradient(ellipse at 50% 15%, rgba(255,176,0,0.3), transparent 70%); }
+.lane-flash.l3 { left: 75%; background: radial-gradient(ellipse at 50% 15%, rgba(255,0,255,0.3), transparent 70%); }
+
+/* Combo milestone flash */
+#combo-flash {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 300;
+  opacity: 0;
+}
+
+/* ========== RESULTS SCREEN ========== */
+#results-screen { text-align: center; padding: 20px; }
+#results-screen h2 {
+  font-size: clamp(20px, 4vw, 32px);
+  color: #ffb000;
+  text-shadow: 0 0 15px #ffb000;
+  margin-bottom: 20px;
+}
+#results-grade {
+  font-size: clamp(60px, 12vw, 100px);
+  font-weight: bold;
+  margin: 10px 0 20px;
+}
+.results-row {
+  font-size: clamp(12px, 1.8vw, 16px);
+  margin: 6px 0;
+  color: #aaa;
+}
+.results-row span { color: #00ffff; text-shadow: 0 0 6px #00ffff; }
+#results-screen .blink {
+  animation: blink 1s ease-in-out infinite;
+  font-size: clamp(12px, 1.6vw, 16px);
+  color: #ffb000;
+  text-shadow: 0 0 10px #ffb000;
+  margin-top: 30px;
+}
+
+/* Ring burst for PERFECT */
+.ring-burst {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid;
+  pointer-events: none;
+  z-index: 160;
+  will-change: transform, opacity;
+}
+</style>
+</head>
+<body>
+
+<div id="crt">
+  <!-- TITLE SCREEN -->
+  <div id="title-screen" class="screen active">
+    <div class="ascii-title" id="ascii-art"></div>
+    <div class="blink">[ PRESS ENTER TO START ]</div>
+    <div class="subtitle">A RHYTHM GAME FOR THE TERMINAL</div>
+  </div>
+
+  <!-- SONG SELECT SCREEN -->
+  <div id="song-select" class="screen">
+    <h2>&gt; SELECT PROGRAM_</h2>
+    <div class="song-list" id="song-list"></div>
+    <div class="nav-hint">[ARROW KEYS] Navigate &nbsp; [ENTER] Execute</div>
+  </div>
+
+  <!-- COUNTDOWN SCREEN -->
+  <div id="countdown-screen" class="screen">
+    <div id="countdown-text">3</div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <div id="game-hud">
+      <div id="hud-left">SCORE: <span id="hud-score">000000</span></div>
+      <div id="hud-center"></div>
+      <div id="hud-right">COMBO: <span id="hud-combo">0</span> &nbsp; <span id="hud-multi">1x</span></div>
+    </div>
+    <div id="game-area">
+      <div class="lane"></div>
+      <div class="lane"></div>
+      <div class="lane"></div>
+      <div class="lane"></div>
+      <div class="hit-zone">
+        <div class="hit-zone-line l0"></div>
+        <div class="hit-zone-line l1"></div>
+        <div class="hit-zone-line l2"></div>
+        <div class="hit-zone-line l3"></div>
+      </div>
+      <div class="lane-flash l0" id="flash0"></div>
+      <div class="lane-flash l1" id="flash1"></div>
+      <div class="lane-flash l2" id="flash2"></div>
+      <div class="lane-flash l3" id="flash3"></div>
+      <div id="particles"></div>
+      <div id="judgment"></div>
+      <div id="key-indicators">
+        <div class="key-ind l0" id="ki0"><span class="ki-letter">D</span><span class="ki-arrow">&larr;</span></div>
+        <div class="key-ind l1" id="ki1"><span class="ki-letter">F</span><span class="ki-arrow">&uarr;</span></div>
+        <div class="key-ind l2" id="ki2"><span class="ki-letter">J</span><span class="ki-arrow">&darr;</span></div>
+        <div class="key-ind l3" id="ki3"><span class="ki-letter">K</span><span class="ki-arrow">&rarr;</span></div>
+      </div>
+      <div id="combo-flash"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="screen">
+    <h2>&gt; MISSION REPORT_</h2>
+    <div id="results-grade">S</div>
+    <div class="results-row">FINAL SCORE: <span id="res-score">0</span></div>
+    <div class="results-row">MAX COMBO: <span id="res-combo">0</span></div>
+    <div class="results-row" style="margin-top:14px;">
+      <span style="color:#00ff41;text-shadow:0 0 6px #00ff41;">PERFECT: <span id="res-perfect">0</span></span> &nbsp;
+      <span style="color:#00ffff;text-shadow:0 0 6px #00ffff;">GOOD: <span id="res-good">0</span></span>
+    </div>
+    <div class="results-row">
+      <span style="color:#ffb000;text-shadow:0 0 6px #ffb000;">OK: <span id="res-ok">0</span></span> &nbsp;
+      <span style="color:#ff0040;text-shadow:0 0 6px #ff0040;">MISS: <span id="res-miss">0</span></span>
+    </div>
+    <div class="blink" style="margin-top:30px;">[ PRESS ENTER TO CONTINUE ]</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  BOOM TERMINAL - CRT Rhythm Game
+// ============================================================
+
+const LANE_COLORS = ['#00ff41','#00ffff','#ffb000','#ff00ff'];
+const LANE_KEYS = ['d','f','j','k'];
+const ARROW_TO_LANE = { 'arrowleft': 0, 'arrowup': 1, 'arrowdown': 2, 'arrowright': 3 };
+const HIT_ZONE_PCT = 0.15; // 15% from top
+const TRAVEL_DURATION = 2200; // ms notes take to travel
+const MAX_PARTICLES = 100;
+const ROCKET_CHARS = ['^','A','*','^'];
+
+// ---- Screens ----
+const screens = {
+  title: document.getElementById('title-screen'),
+  select: document.getElementById('song-select'),
+  countdown: document.getElementById('countdown-screen'),
+  game: document.getElementById('game-screen'),
+  results: document.getElementById('results-screen')
+};
+let currentScreen = 'title';
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  currentScreen = name;
+}
+
+// ---- ASCII Title Art ----
+document.getElementById('ascii-art').textContent =
+` ____   ___   ___  __  __
+| __ ) / _ \\ / _ \\|  \\/  |
+|  _ \\| | | | | | | |\\/| |
+| |_) | |_| | |_| | |  | |
+|____/ \\___/ \\___/|_|  |_|
+
+ _____ _____ ____  __  __ ___ _   _    _    _
+|_   _| ____|  _ \\|  \\/  |_ _| \\ | |  / \\  | |
+  | | |  _| | |_) | |\\/| || ||  \\| | / _ \\ | |
+  | | | |___|  _ <| |  | || || |\\  |/ ___ \\| |___
+  |_| |_____|_| \\_\\_|  |_|___|_| \\_/_/   \\_\\_____|`;
+
+// ============================================================
+//  SONG DATA
+// ============================================================
+const SONGS = [
+  {
+    title: 'ODE TO JOY',
+    composer: 'Beethoven',
+    bpm: 120,
+    difficulty: 'EASY',
+    diffClass: 'easy',
+    wave: 'triangle',
+    vibrato: false,
+    // C4=261.63 D4=293.66 E4=329.63 F4=349.23 G4=392.00
+    // Lanes: C/D->0, E->1, F->2, G->3
+    notes: [
+      // Phrase 1: E E F G | G F E D
+      {t:0, l:1, f:329.63, d:1}, {t:1, l:1, f:329.63, d:1},
+      {t:2, l:2, f:349.23, d:1}, {t:3, l:3, f:392.00, d:1},
+      {t:4, l:3, f:392.00, d:1}, {t:5, l:2, f:349.23, d:1},
+      {t:6, l:1, f:329.63, d:1}, {t:7, l:0, f:293.66, d:1},
+      // Phrase 2: C C D E | E. D D
+      {t:8, l:0, f:261.63, d:1}, {t:9, l:0, f:261.63, d:1},
+      {t:10, l:0, f:293.66, d:1}, {t:11, l:1, f:329.63, d:1},
+      {t:12, l:1, f:329.63, d:1.5}, {t:13.5, l:0, f:293.66, d:0.5},
+      {t:14, l:0, f:293.66, d:2},
+      // Repeat Phrase 1 variation
+      {t:16, l:1, f:329.63, d:1}, {t:17, l:1, f:329.63, d:1},
+      {t:18, l:2, f:349.23, d:1}, {t:19, l:3, f:392.00, d:1},
+      {t:20, l:3, f:392.00, d:1}, {t:21, l:2, f:349.23, d:1},
+      {t:22, l:1, f:329.63, d:1}, {t:23, l:0, f:293.66, d:1},
+      // Phrase 2 variation ending on C
+      {t:24, l:0, f:261.63, d:1}, {t:25, l:0, f:261.63, d:1},
+      {t:26, l:0, f:293.66, d:1}, {t:27, l:1, f:329.63, d:1},
+      {t:28, l:0, f:293.66, d:1.5}, {t:29.5, l:0, f:261.63, d:0.5},
+      {t:30, l:0, f:261.63, d:2},
+    ],
+    bass: [ // every 4 beats, C3=130.81 G2=98
+      {t:0, f:130.81, d:3}, {t:4, f:130.81, d:3}, {t:8, f:130.81, d:3},
+      {t:12, f:98, d:3}, {t:16, f:130.81, d:3}, {t:20, f:130.81, d:3},
+      {t:24, f:130.81, d:3}, {t:28, f:98, d:3}
+    ]
+  },
+  {
+    title: 'KOROBEINIKI',
+    composer: 'Traditional (Tetris)',
+    bpm: 140,
+    difficulty: 'MEDIUM',
+    diffClass: 'medium',
+    wave: 'square',
+    vibrato: false,
+    // A4=440 B4=493.88 C5=523.25 D5=587.33 E5=659.25
+    // Lanes: A->0, B->1, C/D->2, E->3
+    notes: [
+      // Line 1: E B C D | C B A
+      {t:0, l:3, f:659.25, d:1}, {t:1, l:1, f:493.88, d:0.5},
+      {t:1.5, l:2, f:523.25, d:0.5}, {t:2, l:2, f:587.33, d:1},
+      {t:3, l:2, f:523.25, d:0.5}, {t:3.5, l:1, f:493.88, d:0.5},
+      {t:4, l:0, f:440, d:1},
+      // Line 2: A C E | D C B
+      {t:5, l:0, f:440, d:0.5}, {t:5.5, l:2, f:523.25, d:0.5},
+      {t:6, l:3, f:659.25, d:1}, {t:7, l:2, f:587.33, d:0.5},
+      {t:7.5, l:2, f:523.25, d:0.5}, {t:8, l:1, f:493.88, d:1},
+      // Line 3: B C D | E | C A A
+      {t:9, l:1, f:493.88, d:0.5}, {t:9.5, l:2, f:523.25, d:0.5},
+      {t:10, l:2, f:587.33, d:1}, {t:11, l:3, f:659.25, d:1},
+      {t:12, l:2, f:523.25, d:1}, {t:13, l:0, f:440, d:1},
+      {t:14, l:0, f:440, d:2},
+      // Line 4 (repeat variation): D F A | G F E
+      {t:16, l:2, f:587.33, d:1.5}, {t:17.5, l:0, f:440, d:0.5},
+      {t:18, l:3, f:659.25, d:1}, {t:19, l:2, f:587.33, d:0.5},
+      {t:19.5, l:2, f:523.25, d:0.5}, {t:20, l:1, f:493.88, d:1},
+      // Continuation
+      {t:21, l:1, f:493.88, d:0.5}, {t:21.5, l:2, f:523.25, d:0.5},
+      {t:22, l:2, f:587.33, d:1}, {t:23, l:3, f:659.25, d:1},
+      {t:24, l:2, f:523.25, d:1}, {t:25, l:0, f:440, d:1},
+      {t:26, l:0, f:440, d:1},
+      // Ending phrase
+      {t:27, l:3, f:659.25, d:0.5}, {t:27.5, l:2, f:587.33, d:0.5},
+      {t:28, l:1, f:493.88, d:0.5}, {t:28.5, l:2, f:523.25, d:0.5},
+      {t:29, l:0, f:440, d:0.5}, {t:29.5, l:1, f:493.88, d:0.5},
+      {t:30, l:2, f:523.25, d:0.5}, {t:30.5, l:3, f:659.25, d:0.5},
+      {t:31, l:2, f:587.33, d:1}, {t:32, l:0, f:440, d:2},
+    ],
+    bass: [
+      {t:0, f:164.81, d:3}, {t:4, f:220, d:3}, {t:8, f:164.81, d:3},
+      {t:12, f:130.81, d:3}, {t:16, f:146.83, d:3}, {t:20, f:164.81, d:3},
+      {t:24, f:130.81, d:3}, {t:28, f:164.81, d:3}
+    ]
+  },
+  {
+    title: 'FUR ELISE',
+    composer: 'Beethoven',
+    bpm: 100,
+    difficulty: 'HARD',
+    diffClass: 'hard',
+    wave: 'triangle',
+    vibrato: true,
+    // A4=440 B4=493.88 C5=523.25 D5=587.33 D#5=622.25 E5=659.25
+    // Lanes: A->0, B/C->1, D/D#->2, E->3
+    notes: [
+      // Opening motif: E D# E D# E B D C A
+      {t:0, l:3, f:659.25, d:0.5}, {t:0.5, l:2, f:622.25, d:0.5},
+      {t:1, l:3, f:659.25, d:0.5}, {t:1.5, l:2, f:622.25, d:0.5},
+      {t:2, l:3, f:659.25, d:0.5}, {t:2.5, l:1, f:493.88, d:0.5},
+      {t:3, l:2, f:587.33, d:0.5}, {t:3.5, l:1, f:523.25, d:0.5},
+      {t:4, l:0, f:440, d:1},
+      // A (rest) C E A B
+      {t:5.5, l:1, f:523.25, d:0.5}, {t:6, l:3, f:659.25, d:0.5},
+      {t:6.5, l:0, f:440, d:0.5}, {t:7, l:1, f:493.88, d:1},
+      // (rest) E G# B C
+      {t:8.5, l:3, f:659.25, d:0.5},
+      {t:9, l:1, f:493.88, d:0.5}, {t:9.5, l:1, f:523.25, d:0.5},
+      // Repeat motif: E D# E D# E B D C A
+      {t:10, l:3, f:659.25, d:0.5}, {t:10.5, l:2, f:622.25, d:0.5},
+      {t:11, l:3, f:659.25, d:0.5}, {t:11.5, l:2, f:622.25, d:0.5},
+      {t:12, l:3, f:659.25, d:0.5}, {t:12.5, l:1, f:493.88, d:0.5},
+      {t:13, l:2, f:587.33, d:0.5}, {t:13.5, l:1, f:523.25, d:0.5},
+      {t:14, l:0, f:440, d:1},
+      // Resolution: C E A B
+      {t:15.5, l:1, f:523.25, d:0.5}, {t:16, l:3, f:659.25, d:0.5},
+      {t:16.5, l:0, f:440, d:0.5}, {t:17, l:1, f:493.88, d:0.5},
+      // Ending phrase
+      {t:17.5, l:1, f:523.25, d:0.5}, {t:18, l:0, f:440, d:1},
+      // Bridge section
+      {t:20, l:3, f:659.25, d:0.5}, {t:20.5, l:2, f:622.25, d:0.5},
+      {t:21, l:3, f:659.25, d:0.5}, {t:21.5, l:2, f:622.25, d:0.5},
+      {t:22, l:3, f:659.25, d:0.5}, {t:22.5, l:1, f:493.88, d:0.5},
+      {t:23, l:2, f:587.33, d:0.5}, {t:23.5, l:1, f:523.25, d:0.5},
+      {t:24, l:0, f:440, d:1.5},
+    ],
+    bass: [
+      {t:0, f:164.81, d:3}, {t:4, f:130.81, d:3}, {t:8, f:164.81, d:3},
+      {t:10, f:164.81, d:3}, {t:14, f:130.81, d:3}, {t:18, f:164.81, d:3},
+      {t:20, f:164.81, d:3}, {t:24, f:130.81, d:3}
+    ]
+  }
+];
+
+// ============================================================
+//  AUDIO SYSTEM
+// ============================================================
+let audioCtx = null;
+let masterGain = null;
+let compressor = null;
+let audioInitialized = false;
+let humOsc = null;
+let humGain = null;
+
+function initAudio() {
+  if (audioInitialized) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  compressor = audioCtx.createDynamicsCompressor();
+  compressor.threshold.value = -24;
+  compressor.knee.value = 30;
+  compressor.ratio.value = 12;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.25;
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.7;
+  compressor.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+  audioInitialized = true;
+}
+
+function startHum() {
+  if (!audioCtx || humOsc) return;
+  humGain = audioCtx.createGain();
+  humGain.gain.value = 0.02;
+  humGain.connect(compressor);
+  humOsc = audioCtx.createOscillator();
+  humOsc.type = 'sine';
+  humOsc.frequency.value = 60;
+  humOsc.connect(humGain);
+  humOsc.start();
+  // Add some noise
+  const bufferSize = audioCtx.sampleRate * 2;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0.008;
+  noise.connect(noiseGain);
+  noiseGain.connect(compressor);
+  noise.start();
+  humOsc._noiseNode = noise;
+  humOsc._noiseGain = noiseGain;
+}
+
+function stopHum() {
+  if (humOsc) {
+    try {
+      humOsc.stop();
+      if (humOsc._noiseNode) humOsc._noiseNode.stop();
+    } catch(e) {}
+    humOsc = null;
+    humGain = null;
+  }
+}
+
+function playNote(freq, duration, waveType, startTime, useVibrato) {
+  if (!audioCtx) return;
+  const t = startTime || audioCtx.currentTime;
+  const dur = Math.max(duration, 0.1);
+  const osc = audioCtx.createOscillator();
+  osc.type = waveType || 'triangle';
+  osc.frequency.value = freq;
+
+  const gain = audioCtx.createGain();
+  // ADSR envelope - safe for short notes
+  const attack = Math.min(0.02, dur * 0.1);
+  const decay = Math.min(0.06, dur * 0.2);
+  const release = Math.min(0.05, dur * 0.2);
+  // Square waves are harsher, reduce their volume
+  const vol = (waveType === 'square') ? 0.12 : 0.25;
+  const sus = (waveType === 'square') ? 0.08 : 0.18;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(vol, t + attack);
+  gain.gain.linearRampToValueAtTime(sus, t + attack + decay);
+  gain.gain.setValueAtTime(sus, t + dur - release);
+  gain.gain.linearRampToValueAtTime(0, t + dur);
+
+  if (useVibrato) {
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 5.5;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 4; // vibrato depth in Hz
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(t);
+    lfo.stop(t + dur + 0.1);
+  }
+
+  osc.connect(gain);
+  gain.connect(compressor);
+  osc.start(t);
+  osc.stop(t + dur + 0.1);
+}
+
+function playBassNote(freq, duration, startTime) {
+  if (!audioCtx) return;
+  const t = startTime || audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+  gain.gain.setValueAtTime(0.12, t + duration - 0.1);
+  gain.gain.linearRampToValueAtTime(0, t + duration);
+  osc.connect(gain);
+  gain.connect(compressor);
+  osc.start(t);
+  osc.stop(t + duration + 0.1);
+}
+
+function playHitSound(grade, laneIdx) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+
+  // Sharp click
+  const click = audioCtx.createOscillator();
+  click.type = 'square';
+  click.frequency.setValueAtTime(800, t);
+  click.frequency.linearRampToValueAtTime(1600, t + 0.02);
+  const clickGain = audioCtx.createGain();
+  clickGain.gain.setValueAtTime(0.15, t);
+  clickGain.gain.linearRampToValueAtTime(0, t + 0.06);
+  click.connect(clickGain);
+  clickGain.connect(compressor);
+  click.start(t);
+  click.stop(t + 0.07);
+
+  // Rising whoosh
+  const whoosh = audioCtx.createOscillator();
+  whoosh.type = 'sawtooth';
+  whoosh.frequency.setValueAtTime(200, t);
+  whoosh.frequency.exponentialRampToValueAtTime(2000, t + 0.1);
+  const whooshGain = audioCtx.createGain();
+  whooshGain.gain.setValueAtTime(0.07, t);
+  whooshGain.gain.linearRampToValueAtTime(0, t + 0.12);
+  whoosh.connect(whooshGain);
+  whooshGain.connect(compressor);
+  whoosh.start(t);
+  whoosh.stop(t + 0.15);
+
+  // Explosion for PERFECT
+  if (grade === 'PERFECT') {
+    for (let i = 0; i < 3; i++) {
+      const boom = audioCtx.createOscillator();
+      boom.type = 'sawtooth';
+      boom.frequency.value = 300 + i * 50 + Math.random() * 40;
+      const boomGain = audioCtx.createGain();
+      boomGain.gain.setValueAtTime(0.06, t);
+      boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      boom.connect(boomGain);
+      boomGain.connect(compressor);
+      boom.start(t);
+      boom.stop(t + 0.45);
+    }
+  }
+}
+
+function playMissSound() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(200, t);
+  osc.frequency.linearRampToValueAtTime(80, t + 0.15);
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.1, t);
+  gain.gain.linearRampToValueAtTime(0, t + 0.15);
+  osc.connect(gain);
+  gain.connect(compressor);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+
+// ============================================================
+//  SONG SELECT
+// ============================================================
+let selectedSong = 0;
+
+function renderSongList() {
+  const list = document.getElementById('song-list');
+  list.innerHTML = '';
+  SONGS.forEach((song, i) => {
+    const item = document.createElement('div');
+    item.className = 'song-item' + (i === selectedSong ? ' selected' : '');
+    item.innerHTML = `
+      <div class="song-title">&gt; ${song.title}</div>
+      <div class="song-meta">${song.composer} | ${song.bpm} BPM | ${song.notes.length} notes</div>
+      <div class="song-diff ${song.diffClass}">[${song.difficulty}]</div>
+    `;
+    item.onclick = () => { selectedSong = i; renderSongList(); };
+    item.ondblclick = () => { selectedSong = i; startCountdown(); };
+    list.appendChild(item);
+  });
+}
+
+// ============================================================
+//  COUNTDOWN
+// ============================================================
+function startCountdown() {
+  showScreen('countdown');
+  const textEl = document.getElementById('countdown-text');
+  const steps = ['3', '2', '1', 'LAUNCH!'];
+  let step = 0;
+  textEl.textContent = steps[0];
+
+  const interval = setInterval(() => {
+    step++;
+    if (step < steps.length) {
+      textEl.textContent = steps[step];
+      if (step === 3) {
+        textEl.style.color = '#ffb000';
+        textEl.style.textShadow = '0 0 30px #ffb000, 0 0 60px #ffb000';
+      }
+    } else {
+      clearInterval(interval);
+      textEl.style.color = '#00ff41';
+      textEl.style.textShadow = '0 0 30px #00ff41, 0 0 60px #00ff41';
+      startGame();
+    }
+  }, 800);
+}
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+let gameState = null;
+
+function startGame() {
+  const song = SONGS[selectedSong];
+  const beatMs = (60 / song.bpm) * 1000;
+
+  // Build note objects with target times
+  // Offset all notes by TRAVEL_DURATION so the first note has time to travel
+  // from the bottom to the hit zone before the player needs to hit it
+  const noteObjs = song.notes.map((n, i) => ({
+    id: i,
+    lane: n.l,
+    freq: n.f,
+    dur: n.d,
+    targetTimeMs: n.t * beatMs + TRAVEL_DURATION,
+    hit: false,
+    missed: false,
+    spawned: false,
+    el: null
+  }));
+
+  // Find song end time
+  const lastNote = song.notes.reduce((a, b) => (a.t + a.d) > (b.t + b.d) ? a : b);
+  const songEndMs = (lastNote.t + lastNote.d) * beatMs + TRAVEL_DURATION + 2000;
+
+  gameState = {
+    song,
+    bpm: song.bpm,
+    beatMs,
+    notes: noteObjs,
+    bassNotes: song.bass,
+    songEndMs,
+    startTime: null,
+    audioStartTime: null,
+    score: 0,
+    combo: 0,
+    maxCombo: 0,
+    multiplier: 1,
+    counts: { PERFECT: 0, GOOD: 0, OK: 0, MISS: 0 },
+    scheduledMelodyIdx: 0,
+    scheduledBassIdx: 0,
+    running: false,
+    finished: false,
+    particleCount: 0
+  };
+
+  // Update HUD song title
+  document.getElementById('hud-center').textContent = song.title;
+  document.getElementById('hud-score').textContent = '000000';
+  document.getElementById('hud-combo').textContent = '0';
+  document.getElementById('hud-multi').textContent = '1x';
+
+  // Clear old notes/particles
+  document.querySelectorAll('.note').forEach(n => n.remove());
+  document.getElementById('particles').innerHTML = '';
+
+  showScreen('game');
+  stopHum();
+
+  gameState.startTime = performance.now();
+  gameState.audioStartTime = audioCtx.currentTime;
+  gameState.running = true;
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+function gameLoop(timestamp) {
+  if (!gameState || !gameState.running) return;
+
+  const elapsed = timestamp - gameState.startTime;
+  const gameArea = document.getElementById('game-area');
+  const gameAreaHeight = gameArea.offsetHeight;
+  const hitY = gameAreaHeight * HIT_ZONE_PCT;
+
+  // Schedule melody audio (look-ahead)
+  scheduleMelody(elapsed);
+  scheduleBass(elapsed);
+
+  // Spawn notes
+  for (const note of gameState.notes) {
+    if (note.spawned || note.hit || note.missed) continue;
+    const spawnTime = note.targetTimeMs - TRAVEL_DURATION;
+    if (elapsed >= spawnTime) {
+      spawnNoteElement(note, gameArea);
+      note.spawned = true;
+    }
+  }
+
+  // Update note positions
+  for (const note of gameState.notes) {
+    if (!note.el || note.hit || note.missed) continue;
+    // progress: 0 = bottom of screen, 1 = hit zone (15% from top = 85% from bottom)
+    const progress = (elapsed - (note.targetTimeMs - TRAVEL_DURATION)) / TRAVEL_DURATION;
+    const bottomPct = progress * (1 - HIT_ZONE_PCT) * 100;
+    note.el.style.bottom = bottomPct + '%';
+
+    // Check for miss (passed hit zone by >150ms)
+    const timePast = elapsed - note.targetTimeMs;
+    if (timePast > 150) {
+      note.missed = true;
+      note.el.style.opacity = '0.2';
+      // Fade and remove
+      setTimeout(() => { if (note.el) note.el.remove(); }, 300);
+      onMiss(note);
+    }
+  }
+
+  // Check if song ended
+  if (elapsed >= gameState.songEndMs && !gameState.finished) {
+    gameState.finished = true;
+    gameState.running = false;
+    setTimeout(showResults, 500);
+    return;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function scheduleMelody(elapsed) {
+  const lookAheadMs = 100;
+  const gs = gameState;
+  while (gs.scheduledMelodyIdx < gs.notes.length) {
+    const note = gs.notes[gs.scheduledMelodyIdx];
+    const noteTimeSec = note.targetTimeMs / 1000;
+    const schedTime = gs.audioStartTime + noteTimeSec;
+    if (schedTime - audioCtx.currentTime > lookAheadMs / 1000) break;
+    const durSec = (gs.song.notes[gs.scheduledMelodyIdx].d * gs.beatMs) / 1000;
+    playNote(note.freq, durSec, gs.song.wave, schedTime, gs.song.vibrato);
+    gs.scheduledMelodyIdx++;
+  }
+}
+
+function scheduleBass(elapsed) {
+  const lookAheadMs = 200;
+  const gs = gameState;
+  while (gs.scheduledBassIdx < gs.bassNotes.length) {
+    const bn = gs.bassNotes[gs.scheduledBassIdx];
+    const noteTimeSec = (bn.t * gs.beatMs + TRAVEL_DURATION) / 1000;
+    const schedTime = gs.audioStartTime + noteTimeSec;
+    if (schedTime - audioCtx.currentTime > lookAheadMs / 1000) break;
+    const durSec = (bn.d * gs.beatMs) / 1000;
+    playBassNote(bn.f, durSec, schedTime);
+    gs.scheduledBassIdx++;
+  }
+}
+
+// ============================================================
+//  NOTE ELEMENTS
+// ============================================================
+function spawnNoteElement(note, container) {
+  const el = document.createElement('div');
+  el.className = `note l${note.lane}`;
+  el.innerHTML = `<span class="rocket-char">${ROCKET_CHARS[note.lane]}</span><div class="exhaust"></div>`;
+  el.style.bottom = '0%';
+  container.appendChild(el);
+  note.el = el;
+}
+
+// ============================================================
+//  INPUT HANDLING
+// ============================================================
+const keysDown = {};
+
+document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+
+  // Prevent repeat
+  if (keysDown[key]) return;
+  keysDown[key] = true;
+
+  // Screen-specific handling
+  if (currentScreen === 'title') {
+    if (key === 'enter') {
+      initAudio();
+      startHum();
+      showScreen('select');
+      renderSongList();
+    }
+    return;
+  }
+
+  if (currentScreen === 'select') {
+    if (key === 'arrowup' || key === 'arrowleft') {
+      selectedSong = (selectedSong - 1 + SONGS.length) % SONGS.length;
+      renderSongList();
+    } else if (key === 'arrowdown' || key === 'arrowright') {
+      selectedSong = (selectedSong + 1) % SONGS.length;
+      renderSongList();
+    } else if (key === 'enter') {
+      startCountdown();
+    }
+    return;
+  }
+
+  if (currentScreen === 'results') {
+    if (key === 'enter') {
+      showScreen('select');
+      renderSongList();
+      startHum();
+    }
+    return;
+  }
+
+  // Gameplay input
+  if (currentScreen !== 'game' || !gameState || !gameState.running) return;
+
+  let laneIdx = LANE_KEYS.indexOf(key);
+  if (laneIdx === -1) laneIdx = ARROW_TO_LANE[key] !== undefined ? ARROW_TO_LANE[key] : -1;
+  if (laneIdx === -1) return;
+
+  e.preventDefault();
+
+  // Visual key press feedback
+  const ki = document.getElementById('ki' + laneIdx);
+  ki.classList.add('active');
+
+  // Find closest unhit note in this lane
+  const elapsed = performance.now() - gameState.startTime;
+  let closest = null;
+  let closestDiff = Infinity;
+
+  for (const note of gameState.notes) {
+    if (note.hit || note.missed || note.lane !== laneIdx) continue;
+    const diff = Math.abs(elapsed - note.targetTimeMs);
+    if (diff < closestDiff && diff < 300) { // only consider notes within 300ms
+      closest = note;
+      closestDiff = diff;
+    }
+  }
+
+  if (closest) {
+    const diff = Math.abs(elapsed - closest.targetTimeMs);
+    let grade;
+    if (diff <= 50) grade = 'PERFECT';
+    else if (diff <= 100) grade = 'GOOD';
+    else if (diff <= 150) grade = 'OK';
+    else grade = 'MISS';
+
+    closest.hit = true;
+    if (closest.el) closest.el.remove();
+
+    if (grade !== 'MISS') {
+      onHit(grade, laneIdx, closest);
+    } else {
+      onMiss(closest);
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  const key = e.key.toLowerCase();
+  keysDown[key] = false;
+  let laneIdx = LANE_KEYS.indexOf(key);
+  if (laneIdx === -1) laneIdx = ARROW_TO_LANE[key] !== undefined ? ARROW_TO_LANE[key] : -1;
+  if (laneIdx !== -1) {
+    document.getElementById('ki' + laneIdx).classList.remove('active');
+  }
+});
+
+// ============================================================
+//  HIT / MISS LOGIC
+// ============================================================
+function getMultiplier(combo) {
+  if (combo >= 50) return 5;
+  if (combo >= 30) return 4;
+  if (combo >= 20) return 3;
+  if (combo >= 10) return 2;
+  return 1;
+}
+
+function onHit(grade, laneIdx, note) {
+  const gs = gameState;
+  gs.combo++;
+  if (gs.combo > gs.maxCombo) gs.maxCombo = gs.combo;
+  gs.multiplier = getMultiplier(gs.combo);
+  gs.counts[grade]++;
+
+  const basePoints = grade === 'PERFECT' ? 100 : grade === 'GOOD' ? 75 : 50;
+  gs.score += basePoints * gs.multiplier;
+
+  updateHUD();
+  playHitSound(grade, laneIdx);
+  showJudgment(grade, LANE_COLORS[laneIdx]);
+  spawnFireworks(grade, laneIdx);
+  flashLane(laneIdx, grade);
+
+  // Combo milestones
+  if ([10, 20, 30, 50].includes(gs.combo)) {
+    comboMilestoneFlash();
+  }
+}
+
+function onMiss(note) {
+  const gs = gameState;
+  gs.combo = 0;
+  gs.multiplier = 1;
+  gs.counts.MISS++;
+  updateHUD();
+  playMissSound();
+  showJudgment('MISS', '#ff0040');
+}
+
+function updateHUD() {
+  const gs = gameState;
+  document.getElementById('hud-score').textContent = String(gs.score).padStart(6, '0');
+  document.getElementById('hud-combo').textContent = gs.combo;
+  document.getElementById('hud-multi').textContent = gs.multiplier + 'x';
+}
+
+// ============================================================
+//  VISUAL FEEDBACK
+// ============================================================
+function showJudgment(grade, color) {
+  const el = document.getElementById('judgment');
+  el.textContent = grade + (grade !== 'MISS' ? '!' : '');
+  el.style.color = color;
+  el.style.textShadow = `0 0 15px ${color}, 0 0 30px ${color}`;
+  el.style.opacity = '0';
+
+  el.animate([
+    { opacity: 1, transform: 'translateX(-50%) scale(1.5)' },
+    { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.3 },
+    { opacity: 0, transform: 'translateX(-50%) scale(0.8)' }
+  ], { duration: 500, easing: 'ease-out', fill: 'forwards' });
+}
+
+function flashLane(laneIdx, grade) {
+  const flash = document.getElementById('flash' + laneIdx);
+  const intensity = grade === 'PERFECT' ? 1 : grade === 'GOOD' ? 0.6 : 0.3;
+  flash.animate([
+    { opacity: intensity },
+    { opacity: 0 }
+  ], { duration: 300, easing: 'ease-out', fill: 'forwards' });
+}
+
+function comboMilestoneFlash() {
+  const el = document.getElementById('combo-flash');
+  el.style.background = 'radial-gradient(ellipse at center, rgba(255,255,255,0.15), transparent 70%)';
+  el.animate([
+    { opacity: 1 },
+    { opacity: 0 }
+  ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+}
+
+// ============================================================
+//  FIREWORK PARTICLES
+// ============================================================
+const PARTICLE_CHARS = ['*', '+', 'o', '^', '~', '.', '*', '+'];
+
+function spawnFireworks(grade, laneIdx) {
+  const count = grade === 'PERFECT' ? 24 : grade === 'GOOD' ? 16 : 8;
+  const container = document.getElementById('particles');
+  const gameArea = document.getElementById('game-area');
+  const areaW = gameArea.offsetWidth;
+  const areaH = gameArea.offsetHeight;
+
+  // Center of the lane at hit zone
+  const cx = (laneIdx * 0.25 + 0.125) * areaW;
+  const cy = areaH * HIT_ZONE_PCT;
+  const color = LANE_COLORS[laneIdx];
+
+  // Cap particles
+  if (gameState.particleCount > MAX_PARTICLES) return;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.style.position = 'absolute';
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    p.style.color = color;
+    p.style.textShadow = `0 0 8px ${color}`;
+    p.style.fontSize = (10 + Math.random() * 8) + 'px';
+    p.style.fontFamily = "'Courier New', monospace";
+    p.style.fontWeight = 'bold';
+    p.style.pointerEvents = 'none';
+    p.style.willChange = 'transform, opacity';
+    p.textContent = PARTICLE_CHARS[Math.floor(Math.random() * PARTICLE_CHARS.length)];
+    container.appendChild(p);
+    gameState.particleCount++;
+
+    const angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.5;
+    const dist = 40 + Math.random() * 80;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist - (30 + Math.random() * 30); // bias upward
+
+    p.animate([
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0)`, opacity: 0 }
+    ], {
+      duration: 400 + Math.random() * 200,
+      easing: 'ease-out',
+      fill: 'forwards'
+    }).onfinish = () => {
+      p.remove();
+      if (gameState) gameState.particleCount--;
+    };
+  }
+
+  // Ring burst for PERFECT
+  if (grade === 'PERFECT') {
+    const ring = document.createElement('div');
+    ring.className = 'ring-burst';
+    ring.style.left = (cx - 5) + 'px';
+    ring.style.top = (cy - 5) + 'px';
+    ring.style.width = '10px';
+    ring.style.height = '10px';
+    ring.style.borderColor = color;
+    ring.style.boxShadow = `0 0 10px ${color}`;
+    container.appendChild(ring);
+
+    ring.animate([
+      { transform: 'scale(1)', opacity: 0.8 },
+      { transform: 'scale(8)', opacity: 0 }
+    ], {
+      duration: 500,
+      easing: 'ease-out',
+      fill: 'forwards'
+    }).onfinish = () => ring.remove();
+  }
+}
+
+// ============================================================
+//  RESULTS SCREEN
+// ============================================================
+function showResults() {
+  const gs = gameState;
+  const total = gs.notes.length;
+  const pct = total > 0 ? (gs.counts.PERFECT + gs.counts.GOOD * 0.75 + gs.counts.OK * 0.5) / total * 100 : 0;
+
+  let grade, gradeColor;
+  if (pct >= 95) { grade = 'S'; gradeColor = '#ffb000'; }
+  else if (pct >= 85) { grade = 'A'; gradeColor = '#00ff41'; }
+  else if (pct >= 70) { grade = 'B'; gradeColor = '#00ffff'; }
+  else if (pct >= 50) { grade = 'C'; gradeColor = '#ffb000'; }
+  else { grade = 'D'; gradeColor = '#ff0040'; }
+
+  const gradeEl = document.getElementById('results-grade');
+  gradeEl.textContent = grade;
+  gradeEl.style.color = gradeColor;
+  gradeEl.style.textShadow = `0 0 20px ${gradeColor}, 0 0 40px ${gradeColor}`;
+
+  document.getElementById('res-score').textContent = gs.score;
+  document.getElementById('res-combo').textContent = gs.maxCombo;
+  document.getElementById('res-perfect').textContent = gs.counts.PERFECT;
+  document.getElementById('res-good').textContent = gs.counts.GOOD;
+  document.getElementById('res-ok').textContent = gs.counts.OK;
+  document.getElementById('res-miss').textContent = gs.counts.MISS;
+
+  showScreen('results');
+  gameState = null;
+}
+
+// ============================================================
+//  INITIALIZATION
+// ============================================================
+
+// Prevent scrolling/zooming on mobile
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchstart', (e) => {
+  if (currentScreen === 'title') {
+    initAudio();
+    startHum();
+    showScreen('select');
+    renderSongList();
+  }
+}, { passive: true });
+
+</script>
+</body>
+</html>
